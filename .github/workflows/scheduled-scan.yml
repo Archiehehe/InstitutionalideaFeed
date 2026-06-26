@@ -1,0 +1,17 @@
+name: Scheduled Scan
+
+on:
+  schedule:
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger ingestion scan
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            "https://${{ vars.VERCEL_URL || 'your-app.vercel.app' }}/api/scan/run"

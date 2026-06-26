@@ -1,0 +1,41 @@
+[
+  {
+    "ticker": "MDB",
+    "companyName": "MongoDB",
+    "exchange": "NASDAQ",
+    "country": "US",
+    "sector": "Technology",
+    "theme": "Software",
+    "sourceArticleId": "7c8bc5f2-99af-4fe9-9512-c0b1fb892e68",
+    "sourceBasketId": "66010cb8-8aac-460f-b8b5-b083feff436b",
+    "notes": "From BofA Fab Five basket",
+    "id": "031f7295-b078-4cc1-b52c-d1c237360858",
+    "createdAt": "2026-06-26T21:54:25.085Z"
+  },
+  {
+    "ticker": "FANG",
+    "companyName": "Diamondback Energy",
+    "exchange": "NASDAQ",
+    "country": "US",
+    "sector": "Energy",
+    "theme": "Energy",
+    "sourceArticleId": "dde7bc4a-5d9c-45ae-add8-3b0bd76c6f75",
+    "sourceBasketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "notes": "From Goldman Energy basket",
+    "id": "c7d40f2a-db2c-4468-93a6-fde71b7f5656",
+    "createdAt": "2026-06-26T21:54:25.085Z"
+  },
+  {
+    "ticker": "ARES",
+    "companyName": "Ares Management",
+    "exchange": "NYSE",
+    "country": "US",
+    "sector": "Financials",
+    "theme": "Private Credit",
+    "sourceArticleId": "21c216cf-8c84-4ca3-bfb3-8f84ce37fa26",
+    "sourceBasketId": "9d193a97-835d-4725-b607-39b62a524b1d",
+    "notes": "From BofA Private Credit basket",
+    "id": "93908f98-facf-4a36-9f43-54186faef924",
+    "createdAt": "2026-06-26T21:54:25.086Z"
+  }
+]

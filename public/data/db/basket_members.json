@@ -1,0 +1,151 @@
+[
+  {
+    "basketId": "66010cb8-8aac-460f-b8b5-b083feff436b",
+    "ticker": "SNOW",
+    "id": "1677e7b7-a454-4e70-a066-b8cd91256323",
+    "createdAt": "2026-06-26T21:54:25.079Z"
+  },
+  {
+    "basketId": "66010cb8-8aac-460f-b8b5-b083feff436b",
+    "ticker": "DDOG",
+    "id": "c5d1fbb3-2bec-4a65-94d1-e937829dc029",
+    "createdAt": "2026-06-26T21:54:25.079Z"
+  },
+  {
+    "basketId": "66010cb8-8aac-460f-b8b5-b083feff436b",
+    "ticker": "MDB",
+    "id": "d6862190-a5a1-41d5-8664-5da6ac44011b",
+    "createdAt": "2026-06-26T21:54:25.079Z"
+  },
+  {
+    "basketId": "66010cb8-8aac-460f-b8b5-b083feff436b",
+    "ticker": "FROG",
+    "id": "28398c58-b981-4cf6-bcbf-40ddec77dfee",
+    "createdAt": "2026-06-26T21:54:25.079Z"
+  },
+  {
+    "basketId": "66010cb8-8aac-460f-b8b5-b083feff436b",
+    "ticker": "TWLO",
+    "id": "71effb97-142c-4926-84aa-42adbfc24267",
+    "createdAt": "2026-06-26T21:54:25.081Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "DINO",
+    "id": "b9e07a52-ea5e-4ccf-9536-921839f3444e",
+    "createdAt": "2026-06-26T21:54:25.081Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "COP",
+    "id": "971e2fbf-7c26-45ac-81a2-47db3e70b73a",
+    "createdAt": "2026-06-26T21:54:25.081Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "EQT",
+    "id": "3fa79094-ca31-44c1-bc97-d55e43d35b01",
+    "createdAt": "2026-06-26T21:54:25.082Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "VNOM",
+    "id": "e7bc5249-5662-4776-bb9c-1ee3a95cfa48",
+    "createdAt": "2026-06-26T21:54:25.082Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "FANG",
+    "id": "7325ee0d-f7ac-4f4f-a41e-d3afbff53145",
+    "createdAt": "2026-06-26T21:54:25.082Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "KMI",
+    "id": "da98140b-d7c2-400e-91d3-4e36d5cf6636",
+    "createdAt": "2026-06-26T21:54:25.082Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "LNG",
+    "id": "0714044b-66c0-4c07-8231-2b0ecc87b4bf",
+    "createdAt": "2026-06-26T21:54:25.082Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "GLNG",
+    "id": "5cbf6d28-6e80-4f73-ad1e-f8380b12c95a",
+    "createdAt": "2026-06-26T21:54:25.083Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "HAL",
+    "id": "0d692b0a-e117-4cac-8c49-3168a4779cb6",
+    "createdAt": "2026-06-26T21:54:25.083Z"
+  },
+  {
+    "basketId": "17f08131-0915-46fa-ac2a-37b193a05dc0",
+    "ticker": "VST",
+    "id": "486cd6a7-6162-40cb-93fc-824eb6b719e5",
+    "createdAt": "2026-06-26T21:54:25.083Z"
+  },
+  {
+    "basketId": "9d193a97-835d-4725-b607-39b62a524b1d",
+    "ticker": "ARES",
+    "id": "151c85ff-6e69-44dc-854c-05b18992195a",
+    "createdAt": "2026-06-26T21:54:25.083Z"
+  },
+  {
+    "basketId": "9d193a97-835d-4725-b607-39b62a524b1d",
+    "ticker": "KKR",
+    "id": "2aab9902-d970-4156-941d-0d84f679f5ed",
+    "createdAt": "2026-06-26T21:54:25.083Z"
+  },
+  {
+    "basketId": "9d193a97-835d-4725-b607-39b62a524b1d",
+    "ticker": "OWL",
+    "id": "7cf4d4fb-06b4-4b8f-be56-1cbe44270e0d",
+    "createdAt": "2026-06-26T21:54:25.084Z"
+  },
+  {
+    "basketId": "9d193a97-835d-4725-b607-39b62a524b1d",
+    "ticker": "BX",
+    "id": "e081a569-a893-434f-b2c6-400d68bdf3bf",
+    "createdAt": "2026-06-26T21:54:25.084Z"
+  },
+  {
+    "basketId": "4aced602-1352-44bd-87ef-4ee906c6c4ba",
+    "ticker": "LKNCY",
+    "companyName": "Luckin Coffee",
+    "id": "a5d7584f-fbf3-418c-a564-7c91bcd88a58",
+    "createdAt": "2026-06-26T21:54:25.084Z"
+  },
+  {
+    "basketId": "4aced602-1352-44bd-87ef-4ee906c6c4ba",
+    "ticker": "MIXUE",
+    "companyName": "Mixue Group",
+    "id": "4d3da905-880e-49f3-92eb-560ce1962770",
+    "createdAt": "2026-06-26T21:54:25.084Z"
+  },
+  {
+    "basketId": "4aced602-1352-44bd-87ef-4ee906c6c4ba",
+    "ticker": "GUMING",
+    "companyName": "Guming Holdings",
+    "id": "8e9046ea-184f-49b1-9056-4f1640ef8e82",
+    "createdAt": "2026-06-26T21:54:25.084Z"
+  },
+  {
+    "basketId": "4aced602-1352-44bd-87ef-4ee906c6c4ba",
+    "ticker": "9633.HK",
+    "companyName": "Nongfu Spring",
+    "id": "c806910d-73c6-4fc5-b85c-2fe46d9b16e8",
+    "createdAt": "2026-06-26T21:54:25.085Z"
+  },
+  {
+    "basketId": "4aced602-1352-44bd-87ef-4ee906c6c4ba",
+    "ticker": "CHAGEE",
+    "companyName": "Chagee",
+    "id": "3cbec137-deb6-49da-80c3-df8bcf839ad9",
+    "createdAt": "2026-06-26T21:54:25.085Z"
+  }
+]

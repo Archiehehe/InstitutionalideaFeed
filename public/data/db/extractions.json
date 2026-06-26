@@ -1,0 +1,139 @@
+[
+  {
+    "articleId": "7c8bc5f2-99af-4fe9-9512-c0b1fb892e68",
+    "firm": "Bank of America",
+    "sourceType": "media",
+    "category": "Stock Basket",
+    "theme": "Software",
+    "sector": "Technology",
+    "region": "US",
+    "summary": "Bank of America has named its top five software stocks for the second half of 2026.",
+    "reasonShown": "Published by Bank of America; Extracted 5 tickers; Contains basket/stock pick language; Theme: Software; Sector: Technology",
+    "extractedTickers": [
+      "SNOW",
+      "DDOG",
+      "MDB",
+      "FROG",
+      "TWLO"
+    ],
+    "extractedCompanies": [
+      "Snowflake",
+      "Datadog",
+      "MongoDB",
+      "JFrog",
+      "Twilio"
+    ],
+    "scoreBreakdown": {
+      "3+ tickers/companies": 5,
+      "Basket language detected": 4,
+      "Known institution detected": 3,
+      "Sector and region detected": 2,
+      "5+ stocks detected": 2
+    },
+    "confidence": 90,
+    "id": "3df73505-dd7c-4ddb-8883-3fcdee8f333d",
+    "createdAt": "2026-06-26T21:54:25.072Z"
+  },
+  {
+    "articleId": "dde7bc4a-5d9c-45ae-add8-3b0bd76c6f75",
+    "firm": "Goldman Sachs",
+    "sourceType": "primary",
+    "category": "Stock Basket",
+    "theme": "Energy",
+    "sector": "Energy",
+    "region": "US",
+    "summary": "Goldman Sachs has released its conviction energy basket for the second half of 2026.",
+    "reasonShown": "Published by Goldman Sachs; Extracted 10 tickers; Contains basket/stock pick language; Theme: Energy; Sector: Energy; 5+ stocks detected",
+    "extractedTickers": [
+      "DINO",
+      "COP",
+      "EQT",
+      "VNOM",
+      "FANG",
+      "KMI",
+      "LNG",
+      "GLNG",
+      "HAL",
+      "VST"
+    ],
+    "extractedCompanies": [],
+    "scoreBreakdown": {
+      "3+ tickers/companies": 5,
+      "Basket language detected": 4,
+      "Known institution detected": 3,
+      "Primary source": 3,
+      "Sector and region detected": 2,
+      "5+ stocks detected": 2,
+      "Price targets/ratings mentioned": 2
+    },
+    "confidence": 95,
+    "id": "2df00545-9451-4a61-ae0d-161faa00bd08",
+    "createdAt": "2026-06-26T21:54:25.074Z"
+  },
+  {
+    "articleId": "21c216cf-8c84-4ca3-bfb3-8f84ce37fa26",
+    "firm": "Bank of America",
+    "sourceType": "primary",
+    "category": "Stock Basket",
+    "theme": "Private Credit",
+    "sector": "Financials",
+    "region": "US",
+    "summary": "Bank of America has created a new private credit basket featuring leading alternative asset managers.",
+    "reasonShown": "Published by Bank of America; Extracted 4 tickers; Contains basket language; Theme: Private Credit; Sector: Financials",
+    "extractedTickers": [
+      "ARES",
+      "KKR",
+      "OWL",
+      "BX"
+    ],
+    "extractedCompanies": [
+      "ARES",
+      "KKR",
+      "OWL",
+      "BX"
+    ],
+    "scoreBreakdown": {
+      "3+ tickers/companies": 5,
+      "Basket language detected": 4,
+      "Known institution detected": 3,
+      "Primary source": 3,
+      "Sector and region detected": 2
+    },
+    "confidence": 85,
+    "id": "bcd68207-f674-41b3-bbec-73bb3813985f",
+    "createdAt": "2026-06-26T21:54:25.076Z"
+  },
+  {
+    "articleId": "fdfbfee5-ec1f-4b72-85c8-d423f1d51db1",
+    "firm": "JPMorgan",
+    "sourceType": "primary",
+    "category": "Coverage Initiation",
+    "theme": "China Consumer",
+    "sector": "Consumer",
+    "region": "China",
+    "summary": "JPMorgan has initiated coverage on five China consumer beverage companies.",
+    "reasonShown": "Published by JPMorgan; Extracted tickers; Contains basket language; Theme: China Consumer; Sector: Consumer; Region: China; EM/country angle",
+    "extractedTickers": [
+      "LKNCY"
+    ],
+    "extractedCompanies": [
+      "Luckin Coffee",
+      "Mixue Group",
+      "Guming Holdings",
+      "Nongfu Spring",
+      "Chagee"
+    ],
+    "scoreBreakdown": {
+      "3+ tickers/companies": 5,
+      "Basket language detected": 4,
+      "Known institution detected": 3,
+      "Primary source": 3,
+      "Sector and region detected": 2,
+      "EM/country angle": 2,
+      "5+ stocks detected": 2
+    },
+    "confidence": 92,
+    "id": "a43da951-4878-4bac-803a-22bfd82a922c",
+    "createdAt": "2026-06-26T21:54:25.077Z"
+  }
+]
