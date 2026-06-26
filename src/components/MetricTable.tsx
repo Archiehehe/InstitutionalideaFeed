@@ -21,16 +21,16 @@ export function MetricTable({ rows }: { rows: MetricRow[] }) {
   return (
     <Table>
       <TableHeader>
-        <TableRow>
-          <TableHead className="w-1/3">Metric</TableHead>
-          <TableHead>Value</TableHead>
+        <TableRow className="border-border/30">
+          <TableHead className="w-1/3 text-muted-foreground/60">Metric</TableHead>
+          <TableHead className="text-muted-foreground/60">Value</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.map((row) => (
-          <TableRow key={row.label}>
-            <TableCell className="text-xs text-muted-foreground">{row.label}</TableCell>
-            <TableCell className="text-xs font-mono">{formatValue(row.value, row.format)}</TableCell>
+          <TableRow key={row.label} className="border-border/20 hover:bg-muted/20">
+            <TableCell className="text-xs text-muted-foreground/70">{row.label}</TableCell>
+            <TableCell className="text-xs font-mono text-foreground/80">{formatValue(row.value, row.format)}</TableCell>
           </TableRow>
         ))}
       </TableBody>

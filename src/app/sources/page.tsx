@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { EmptyState } from '@/components/EmptyState'
 import { LoadingState } from '@/components/LoadingState'
 import { ErrorState } from '@/components/ErrorState'
-import { Plus, Play } from 'lucide-react'
+import { Plus, Play, Pencil, Trash2, Download } from 'lucide-react'
+import { STARTER_SOURCES } from '@/lib/starterSources'
 
 interface SourceItem {
   id: string
@@ -25,12 +26,17 @@ interface SourceItem {
   notes?: string
 }
 
+const EMPTY_SOURCE = { name: '', domain: '', sourceType: 'media', rssUrl: '', parserType: 'generic', enabled: true, qualityScore: 5 }
+
 export default function SourcesPage() {
   const [sources, setSources] = useState<SourceItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [newSource, setNewSource] = useState({ name: '', domain: '', sourceType: 'media', rssUrl: '', parserType: 'generic', enabled: true, qualityScore: 5 })
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [formData, setFormData] = useState(EMPTY_SOURCE)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
 
   const fetchSources = async () => {
     try {
@@ -46,7 +52,10 @@ export default function SourcesPage() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchSources() }, [])
+
+  const resetForm = () => setFormData(EMPTY_SOURCE)
 
   const handleToggle = async (id: string, enabled: boolean) => {
     await fetch(`/api/sources/${id}`, {
@@ -61,11 +70,44 @@ export default function SourcesPage() {
     await fetch('/api/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newSource),
+      body: JSON.stringify(formData),
     })
-    setDialogOpen(false)
-    setNewSource({ name: '', domain: '', sourceType: 'media', rssUrl: '', parserType: 'generic', enabled: true, qualityScore: 5 })
+    setAddDialogOpen(false)
+    resetForm()
     fetchSources()
+  }
+
+  const handleEdit = async () => {
+    if (!editingId) return
+    await fetch(`/api/sources/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    })
+    setEditDialogOpen(false)
+    setEditingId(null)
+    resetForm()
+    fetchSources()
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this source?')) return
+    await fetch(`/api/sources/${id}`, { method: 'DELETE' })
+    fetchSources()
+  }
+
+  const openEdit = (s: SourceItem) => {
+    setFormData({
+      name: s.name,
+      domain: s.domain,
+      sourceType: s.sourceType,
+      rssUrl: s.rssUrl || '',
+      parserType: s.parserType || 'generic',
+      enabled: s.enabled,
+      qualityScore: s.qualityScore,
+    })
+    setEditingId(s.id)
+    setEditDialogOpen(true)
   }
 
   const handleTestSource = async (id: string) => {
@@ -76,6 +118,24 @@ export default function SourcesPage() {
     })
   }
 
+  const handleImportStarters = async () => {
+    setImporting(true)
+    try {
+      for (const src of STARTER_SOURCES) {
+        const existing = sources.find(s => s.domain === src.domain)
+        if (existing) continue
+        await fetch('/api/sources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(src),
+        })
+      }
+      await fetchSources()
+    } finally {
+      setImporting(false)
+    }
+  }
+
   if (error) return <ErrorState message={error} />
   if (loading) return <LoadingState />
 
@@ -83,84 +143,137 @@ export default function SourcesPage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold">Sources</h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger>
-            <Button variant="outline" size="sm" className="gap-1">
-              <Plus className="h-3 w-3" /> Add Source
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Source</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-muted-foreground">Name</label>
-                <Input value={newSource.name} onChange={(e) => setNewSource({ ...newSource, name: e.target.value })} />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Domain</label>
-                <Input value={newSource.domain} onChange={(e) => setNewSource({ ...newSource, domain: e.target.value })} />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Type</label>
-                <Select value={newSource.sourceType} onValueChange={(v) => setNewSource({ ...newSource, sourceType: v ?? 'media' })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="primary">Primary</SelectItem>
-                    <SelectItem value="media">Media</SelectItem>
-                    <SelectItem value="newsletter">Newsletter</SelectItem>
-                    <SelectItem value="manual">Manual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">RSS URL (optional)</label>
-                <Input value={newSource.rssUrl} onChange={(e) => setNewSource({ ...newSource, rssUrl: e.target.value })} />
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-1" onClick={handleImportStarters} disabled={importing}>
+            <Download className="h-3 w-3" /> {importing ? 'Importing...' : 'Import starters'}
+          </Button>
+          <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) resetForm() }}>
+            <DialogTrigger>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Plus className="h-3 w-3" /> Add Source
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Add Source</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Name</label>
+                  <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Domain</label>
+                  <Input value={formData.domain} onChange={(e) => setFormData({ ...formData, domain: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Type</label>
+                  <Select value={formData.sourceType} onValueChange={(v) => setFormData({ ...formData, sourceType: v ?? 'media' })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary">Primary</SelectItem>
+                      <SelectItem value="media">Media</SelectItem>
+                      <SelectItem value="newsletter">Newsletter</SelectItem>
+                      <SelectItem value="manual">Manual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">RSS URL (optional)</label>
+                  <Input value={formData.rssUrl} onChange={(e) => setFormData({ ...formData, rssUrl: e.target.value })} />
+                </div>
               </div>
               <Button onClick={handleAdd}>Add Source</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {sources.length === 0 ? (
-        <EmptyState title="No sources configured" description="Add sources to start ingesting articles" />
+        <EmptyState
+          title="No sources configured"
+          description="Add institutional, bank, or media sources for the scanner to monitor."
+          actions={[
+            { label: 'Add Source', onClick: () => setAddDialogOpen(true) },
+            { label: 'Import starter sources', onClick: handleImportStarters },
+          ]}
+        />
       ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Domain</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Quality</TableHead>
-                <TableHead>Enabled</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sources.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell className="text-sm font-medium">{s.name}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{s.domain}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="text-xs capitalize">{s.sourceType}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs">{s.qualityScore}/10</TableCell>
-                  <TableCell>
-                    <Switch checked={s.enabled} onCheckedChange={(v) => handleToggle(s.id, v)} />
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleTestSource(s.id)}>
-                      <Play className="h-3 w-3" /> Test
-                    </Button>
-                  </TableCell>
+        <>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Domain</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Quality</TableHead>
+                  <TableHead>Enabled</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {sources.map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell className="text-sm font-medium">{s.name}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{s.domain}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="text-xs capitalize">{s.sourceType}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{s.qualityScore}/10</TableCell>
+                    <TableCell>
+                      <Switch checked={s.enabled} onCheckedChange={(v) => handleToggle(s.id, v)} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(s)} title="Edit">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleTestSource(s.id)} title="Test scan">
+                          <Play className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDelete(s.id)} title="Delete">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) { setEditingId(null); resetForm() }}}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Edit Source</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Name</label>
+                  <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Domain</label>
+                  <Input value={formData.domain} onChange={(e) => setFormData({ ...formData, domain: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Type</label>
+                  <Select value={formData.sourceType} onValueChange={(v) => setFormData({ ...formData, sourceType: v ?? 'media' })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary">Primary</SelectItem>
+                      <SelectItem value="media">Media</SelectItem>
+                      <SelectItem value="newsletter">Newsletter</SelectItem>
+                      <SelectItem value="manual">Manual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">RSS URL (optional)</label>
+                  <Input value={formData.rssUrl} onChange={(e) => setFormData({ ...formData, rssUrl: e.target.value })} />
+                </div>
+              </div>
+              <Button onClick={handleEdit}>Save Changes</Button>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
     </div>
   )

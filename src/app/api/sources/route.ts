@@ -1,10 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getStore } from '@/lib/storage'
-import { seedDemoData } from '@/lib/seed'
 
 export async function GET() {
   const store = getStore()
-  await seedDemoData()
   const sources = await store.getSources()
   return Response.json(sources)
 }

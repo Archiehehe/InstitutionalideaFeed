@@ -5,6 +5,8 @@ import { BasketCard } from '@/components/BasketCard'
 import { EmptyState } from '@/components/EmptyState'
 import { LoadingState } from '@/components/LoadingState'
 import { ErrorState } from '@/components/ErrorState'
+import { useRouter } from 'next/navigation'
+import { getSnapJudgementUrl } from '@/lib/integrations/snapJudgement'
 
 interface BasketData {
   id: string
@@ -21,6 +23,7 @@ export default function BasketsPage() {
   const [baskets, setBaskets] = useState<BasketData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const fetchBaskets = async () => {
     try {
@@ -36,6 +39,7 @@ export default function BasketsPage() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchBaskets() }, [])
 
   const handleDelete = async (id: string) => {
@@ -52,6 +56,24 @@ export default function BasketsPage() {
     URL.revokeObjectURL(url)
   }
 
+  const handleAddAllToWatchlist = async (basket: BasketData) => {
+    for (const t of basket.tickers) {
+      await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker: t }),
+      })
+    }
+  }
+
+  const handleRunMetrics = async (basket: BasketData) => {
+    await fetch(`/api/baskets/${basket.id}/run-metrics`, { method: 'POST' })
+  }
+
+  const handleAnalyze = (basket: BasketData) => {
+    window.open(getSnapJudgementUrl(basket.tickers), '_blank', 'noopener,noreferrer')
+  }
+
   if (error) return <ErrorState message={error} />
   if (loading) return <LoadingState />
 
@@ -59,15 +81,29 @@ export default function BasketsPage() {
     <div>
       <h1 className="text-lg font-semibold mb-4">Baskets</h1>
       {baskets.length === 0 ? (
-        <EmptyState title="No baskets yet" description="Save a basket from the feed to get started" />
+        <EmptyState
+          title="No saved baskets yet"
+          description="Save a basket from a feed article after tickers are extracted."
+          actions={[
+            { label: 'Go to Feed', onClick: () => router.push('/feed') },
+          ]}
+        />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {baskets.map((b) => (
             <BasketCard
               key={b.id}
-              {...b}
-              onRunMetrics={() => fetch(`/api/baskets/${b.id}/run-metrics`, { method: 'POST' })}
-              onAddAllToWatchlist={() => {}}
+              id={b.id}
+              name={b.name}
+              firm={b.firm}
+              theme={b.theme}
+              sector={b.sector}
+              region={b.region}
+              tickers={b.tickers}
+              createdAt={b.createdAt}
+              onRunMetrics={() => handleRunMetrics(b)}
+              onAddAllToWatchlist={() => handleAddAllToWatchlist(b)}
+              onAnalyze={() => handleAnalyze(b)}
               onExportCsv={() => handleExportCsv(b)}
               onDelete={() => handleDelete(b.id)}
             />

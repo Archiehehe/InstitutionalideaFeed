@@ -12,3 +12,14 @@ export async function PATCH(
   if (!source) return Response.json({ error: 'Not found' }, { status: 404 })
   return Response.json(source)
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const store = getStore()
+  const { id } = await params
+  const deleted = await store.deleteSource(id)
+  if (!deleted) return Response.json({ error: 'Not found' }, { status: 404 })
+  return Response.json({ deleted: true })
+}

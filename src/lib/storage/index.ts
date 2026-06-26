@@ -9,8 +9,13 @@ export function getStore(): Store {
 
   if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
     store = createSupabaseStore()
-  } else {
+  } else if (process.env.NODE_ENV === 'development') {
     store = createJsonStore()
+  } else {
+    throw new Error(
+      'Supabase not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY environment variables. ' +
+      'JSON file store is only available in development mode.'
+    )
   }
 
   return store

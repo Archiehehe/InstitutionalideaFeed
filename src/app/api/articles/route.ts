@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
 import { getStore } from '@/lib/storage'
-import { seedDemoData } from '@/lib/seed'
 import { extractFromArticle } from '@/lib/ingestion/extractor'
 import { parseArticleHtml } from '@/lib/ingestion/parser'
 import { fetchArticleHtml } from '@/lib/ingestion/fetcher'
@@ -9,7 +8,6 @@ import { DEFAULT_THRESHOLD } from '@/lib/ingestion/scorer'
 
 export async function GET(request: NextRequest) {
   const store = getStore()
-  await seedDemoData()
 
   const { searchParams } = request.nextUrl
   const search = searchParams.get('search')?.toLowerCase()
@@ -54,7 +52,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const store = getStore()
-  await seedDemoData()
 
   try {
     const { url } = await request.json()

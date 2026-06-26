@@ -19,14 +19,16 @@ export function NavSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-56 border-r bg-background flex flex-col shrink-0">
-      <div className="p-4 border-b">
-        <Link href="/feed" className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-primary" />
-          <span className="font-semibold text-sm">IdeaFeed</span>
+    <aside className="w-56 border-r border-border bg-white flex flex-col shrink-0">
+      <div className="px-4 pt-5 pb-4 border-b border-border">
+        <Link href="/feed" className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <BookOpen className="h-4 w-4 text-white" />
+          </div>
+          <span className="font-semibold text-sm text-[#0F172A] tracking-tight">IdeaFeed</span>
         </Link>
       </div>
-      <nav className="flex-1 p-2 space-y-1">
+      <nav className="flex-1 px-2 py-4 space-y-0.5">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href)
           return (
@@ -36,19 +38,21 @@ export function NavSidebar() {
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
                 active
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                  ? 'bg-[#EFF6FF] text-[#2563EB] font-medium'
+                  : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC]',
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className={cn('h-4 w-4 shrink-0',
+                active ? 'text-[#2563EB]' : 'text-[#94A3B8]',
+              )} />
               {label}
             </Link>
           )
         })}
       </nav>
-      <div className="p-3 border-t">
-        <p className="text-[10px] text-muted-foreground text-center">
-          Institutional Idea Feed
+      <div className="px-4 py-3 border-t border-border">
+        <p className="text-[11px] text-[#94A3B8] tracking-wider uppercase font-medium">
+          Institutional Feed
         </p>
       </div>
     </aside>

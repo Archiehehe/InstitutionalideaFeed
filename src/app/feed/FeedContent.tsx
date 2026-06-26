@@ -9,7 +9,9 @@ import { ErrorState } from '@/components/ErrorState'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Plus, ExternalLink } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { getSnapJudgementUrl } from '@/lib/integrations/snapJudgement'
 
 interface ArticleData {
   id: string
@@ -36,6 +38,9 @@ export function FeedPage() {
   const [regionFilter, setRegionFilter] = useState('')
   const [submitUrl, setSubmitUrl] = useState('')
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [submitMessage, setSubmitMessage] = useState('')
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const router = useRouter()
 
   const fetchArticles = useCallback(async () => {
     try {
@@ -57,6 +62,7 @@ export function FeedPage() {
     }
   }, [search, firmFilter, sectorFilter, regionFilter])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchArticles() }, [fetchArticles])
 
   const uniqueFirms = [...new Set(articles.map(a => a.firm).filter(Boolean) as string[])]
@@ -66,18 +72,33 @@ export function FeedPage() {
   const handleSubmitUrl = async () => {
     if (!submitUrl) return
     setSubmitStatus('loading')
+    setSubmitMessage('')
     try {
       const res = await fetch('/api/articles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: submitUrl }),
       })
-      if (!res.ok) throw new Error('Failed to submit')
-      setSubmitStatus('done')
-      setSubmitUrl('')
-      fetchArticles()
+      const data = await res.json()
+      if (res.status === 201) {
+        setSubmitStatus('done')
+        setSubmitMessage(`Article saved! Score: ${data.score}`)
+        setSubmitUrl('')
+        setTimeout(() => { setDialogOpen(false); setSubmitMessage(''); setSubmitStatus('idle') }, 1500)
+        fetchArticles()
+      } else if (res.status === 409) {
+        setSubmitStatus('error')
+        setSubmitMessage('Article already exists (duplicate).')
+      } else if (res.status === 422) {
+        setSubmitStatus('error')
+        setSubmitMessage(`Score ${data.score} is below the feed threshold. Breakdown: ${JSON.stringify(data.breakdown)}`)
+      } else {
+        setSubmitStatus('error')
+        setSubmitMessage(data.error || 'Failed to submit article.')
+      }
     } catch {
       setSubmitStatus('error')
+      setSubmitMessage('Network error. Could not reach the server.')
     }
   }
 
@@ -89,6 +110,28 @@ export function FeedPage() {
     })
   }
 
+  const handleAnalyze = (article: ArticleData) => {
+    window.open(getSnapJudgementUrl(article.tickers), '_blank', 'noopener,noreferrer')
+  }
+
+  const handleSaveBasket = async (article: ArticleData) => {
+    const name = [article.firm, article.theme, 'Basket'].filter(Boolean).join(' ') || `Basket from ${article.title.slice(0, 40)}`
+    await fetch('/api/baskets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        articleId: article.id,
+        firm: article.firm,
+        theme: article.theme,
+        sector: article.sector,
+        region: article.region,
+        tickers: article.tickers,
+      }),
+    })
+    handleFeedback(article.id, 'save_basket')
+  }
+
   if (error) return <ErrorState message={error} />
   if (loading) return <LoadingState />
 
@@ -96,7 +139,7 @@ export function FeedPage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold">Feed</h1>
-        <Dialog>
+        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) { setSubmitStatus('idle'); setSubmitMessage(''); setSubmitUrl('') }}}>
           <DialogTrigger>
             <Button variant="outline" size="sm" className="gap-1">
               <Plus className="h-3 w-3" /> Submit URL
@@ -116,8 +159,11 @@ export function FeedPage() {
                 {submitStatus === 'loading' ? 'Submitting...' : 'Submit'}
               </Button>
             </div>
-            {submitStatus === 'done' && <p className="text-xs text-green-600">Article submitted!</p>}
-            {submitStatus === 'error' && <p className="text-xs text-red-500">Failed to submit</p>}
+            {submitMessage && (
+              <p className={`text-xs mt-1 ${submitStatus === 'done' ? 'text-green-600' : 'text-red-500'}`}>
+                {submitMessage}
+              </p>
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -138,8 +184,12 @@ export function FeedPage() {
 
       {articles.length === 0 ? (
         <EmptyState
-          title="No articles yet"
-          description="Submit a URL or run a scan to populate the feed"
+          title="No institutional ideas yet"
+          description="Add a source or submit a research/media URL to start building your feed."
+          actions={[
+            { label: 'Submit URL', onClick: () => setDialogOpen(true) },
+            { label: 'Go to Sources', onClick: () => router.push('/sources') },
+          ]}
         />
       ) : (
         <div className="space-y-3">
@@ -158,9 +208,18 @@ export function FeedPage() {
               tickers={a.tickers}
               score={a.score}
               reasonShown={a.reasonShown}
-              onSaveBasket={() => handleFeedback(a.id, 'save_basket')}
-              onRunMetrics={() => {}}
-              onAddAllToWatchlist={() => {}}
+              onSaveBasket={() => handleSaveBasket(a)}
+              onRunMetrics={() => router.push(`/article/${a.id}`)}
+              onAddAllToWatchlist={async () => {
+                for (const t of a.tickers) {
+                  await fetch('/api/watchlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticker: t }),
+                  })
+                }
+              }}
+              onAnalyze={() => handleAnalyze(a)}
               onMoreLikeThis={() => handleFeedback(a.id, 'more_like_this')}
               onLessLikeThis={() => handleFeedback(a.id, 'less_like_this')}
               onHideSource={() => handleFeedback(a.id, 'hide_source')}

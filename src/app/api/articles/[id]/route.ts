@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
 import { getStore } from '@/lib/storage'
-import { seedDemoData } from '@/lib/seed'
 import { runMetricsForTicker } from '@/lib/metrics/runMetrics'
 import type { MetricRow } from '@/components/MetricTable'
 
@@ -9,7 +8,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const store = getStore()
-  await seedDemoData()
 
   const { id } = await params
   const article = await store.getArticle(id)

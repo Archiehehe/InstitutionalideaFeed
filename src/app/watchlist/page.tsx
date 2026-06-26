@@ -8,7 +8,9 @@ import { EmptyState } from '@/components/EmptyState'
 import { LoadingState } from '@/components/LoadingState'
 import { ErrorState } from '@/components/ErrorState'
 import { Input } from '@/components/ui/input'
-import { Download, Trash2, TrendingUp } from 'lucide-react'
+import { Download, Trash2, TrendingUp, Zap } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { getSnapJudgementUrl } from '@/lib/integrations/snapJudgement'
 
 interface WatchlistItem {
   id: string
@@ -27,6 +29,7 @@ export default function WatchlistPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [newTicker, setNewTicker] = useState('')
+  const router = useRouter()
 
   const fetchItems = async () => {
     try {
@@ -42,6 +45,7 @@ export default function WatchlistPage() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchItems() }, [])
 
   const handleAdd = async () => {
@@ -71,6 +75,13 @@ export default function WatchlistPage() {
     URL.revokeObjectURL(url)
   }
 
+  const handleRunMetrics = async (ticker: string) => {
+    const res = await fetch(`/api/metrics/${ticker}`)
+    if (!res.ok) return
+    const data = await res.json()
+    alert(`Metrics for ${ticker}:\nPrice: ${data.price}\nAnalyst Rating: ${data.analystRating}\nTarget: ${data.avgPriceTarget}\nUpside: ${data.impliedUpside}%`)
+  }
+
   if (error) return <ErrorState message={error} />
   if (loading) return <LoadingState />
 
@@ -97,7 +108,13 @@ export default function WatchlistPage() {
       </div>
 
       {items.length === 0 ? (
-        <EmptyState title="Watchlist is empty" description="Add tickers or save them from articles" />
+        <EmptyState
+          title="No watchlist items yet"
+          description="Add tickers from extracted baskets or type one in manually."
+          actions={[
+            { label: 'Go to Baskets', onClick: () => router.push('/baskets') },
+          ]}
+        />
       ) : (
         <div className="rounded-md border">
           <Table>
@@ -122,9 +139,19 @@ export default function WatchlistPage() {
                   <TableCell>{item.sector && <Badge variant="secondary" className="text-xs">{item.sector}</Badge>}</TableCell>
                   <TableCell>{item.theme && <Badge variant="outline" className="text-xs">{item.theme}</Badge>}</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleRemove(item.id)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <a href={getSnapJudgementUrl(item.ticker)} target="_blank" rel="noopener noreferrer" title="Open in SnapJudgement">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Zap className="h-3 w-3" />
+                        </Button>
+                      </a>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleRunMetrics(item.ticker)} title="Run metrics">
+                        <TrendingUp className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleRemove(item.id)} title="Remove">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
