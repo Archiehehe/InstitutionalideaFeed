@@ -6,10 +6,6 @@ import { FilterBar } from '@/components/FilterBar'
 import { EmptyState } from '@/components/EmptyState'
 import { LoadingState } from '@/components/LoadingState'
 import { ErrorState } from '@/components/ErrorState'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { getSnapJudgementUrl } from '@/lib/integrations/snapJudgement'
 
@@ -36,10 +32,6 @@ export function FeedPage() {
   const [firmFilter, setFirmFilter] = useState('')
   const [sectorFilter, setSectorFilter] = useState('')
   const [regionFilter, setRegionFilter] = useState('')
-  const [submitUrl, setSubmitUrl] = useState('')
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
-  const [submitMessage, setSubmitMessage] = useState('')
-  const [dialogOpen, setDialogOpen] = useState(false)
   const router = useRouter()
 
   const fetchArticles = useCallback(async () => {
@@ -68,39 +60,6 @@ export function FeedPage() {
   const uniqueFirms = [...new Set(articles.map(a => a.firm).filter(Boolean) as string[])]
   const uniqueSectors = [...new Set(articles.map(a => a.sector).filter(Boolean) as string[])]
   const uniqueRegions = [...new Set(articles.map(a => a.region).filter(Boolean) as string[])]
-
-  const handleSubmitUrl = async () => {
-    if (!submitUrl) return
-    setSubmitStatus('loading')
-    setSubmitMessage('')
-    try {
-      const res = await fetch('/api/articles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: submitUrl }),
-      })
-      const data = await res.json()
-      if (res.status === 201) {
-        setSubmitStatus('done')
-        setSubmitMessage(`Article saved! Score: ${data.score}`)
-        setSubmitUrl('')
-        setTimeout(() => { setDialogOpen(false); setSubmitMessage(''); setSubmitStatus('idle') }, 1500)
-        fetchArticles()
-      } else if (res.status === 409) {
-        setSubmitStatus('error')
-        setSubmitMessage('Article already exists (duplicate).')
-      } else if (res.status === 422) {
-        setSubmitStatus('error')
-        setSubmitMessage(`Score ${data.score} is below the feed threshold. Breakdown: ${JSON.stringify(data.breakdown)}`)
-      } else {
-        setSubmitStatus('error')
-        setSubmitMessage(data.error || 'Failed to submit article.')
-      }
-    } catch {
-      setSubmitStatus('error')
-      setSubmitMessage('Network error. Could not reach the server.')
-    }
-  }
 
   const handleFeedback = async (articleId: string, action: string) => {
     await fetch('/api/feedback', {
@@ -137,36 +96,7 @@ export function FeedPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-semibold">Feed</h1>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) { setSubmitStatus('idle'); setSubmitMessage(''); setSubmitUrl('') }}}>
-          <DialogTrigger>
-            <Button variant="outline" size="sm" className="gap-1">
-              <Plus className="h-3 w-3" /> Submit URL
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Submit Article URL</DialogTitle>
-            </DialogHeader>
-            <div className="flex gap-2">
-              <Input
-                placeholder="https://..."
-                value={submitUrl}
-                onChange={(e) => setSubmitUrl(e.target.value)}
-              />
-              <Button onClick={handleSubmitUrl} disabled={submitStatus === 'loading'}>
-                {submitStatus === 'loading' ? 'Submitting...' : 'Submit'}
-              </Button>
-            </div>
-            {submitMessage && (
-              <p className={`text-xs mt-1 ${submitStatus === 'done' ? 'text-green-600' : 'text-red-500'}`}>
-                {submitMessage}
-              </p>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
+      <h1 className="text-lg font-semibold mb-4">Feed</h1>
 
       <FilterBar
         firms={uniqueFirms}
@@ -185,9 +115,8 @@ export function FeedPage() {
       {articles.length === 0 ? (
         <EmptyState
           title="No institutional ideas yet"
-          description="Add a source or submit a research/media URL to start building your feed."
+          description="Add a source to start building your feed. Articles are fetched automatically via API and parsers."
           actions={[
-            { label: 'Submit URL', onClick: () => setDialogOpen(true) },
             { label: 'Go to Sources', onClick: () => router.push('/sources') },
           ]}
         />
