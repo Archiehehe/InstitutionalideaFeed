@@ -17,7 +17,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Institutional Idea Feed",
+  title: "Wall Street Scout",
   description: "Turn bank/firm media pieces into screenable stock baskets, ranked and enriched with investor metrics.",
 };
 

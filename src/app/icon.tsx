@@ -12,22 +12,23 @@ export default function Icon() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#2563EB',
-        borderRadius: 6,
+        background: '#000000',
+        border: '2px solid #22c55e',
+        borderRadius: '8px',
         flexDirection: 'column',
       }}
     >
       <span
         style={{
-          color: 'white',
-          fontSize: 16,
-          fontWeight: 700,
+          color: '#22c55e',
+          fontSize: 20,
+          fontWeight: 800,
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          letterSpacing: '-0.04em',
           lineHeight: 1,
+          marginTop: '-1px',
         }}
       >
-        IIF
+        $
       </span>
     </div>,
     { width: 32, height: 32 },
