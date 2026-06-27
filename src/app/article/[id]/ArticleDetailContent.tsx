@@ -8,12 +8,9 @@ import { Button } from '@/components/ui/button'
 import { FirmBadge } from '@/components/FirmBadge'
 import { ThemeBadge, SectorBadge, SourceTypeBadge } from '@/components/ThemeBadge'
 import { ScoreBadge } from '@/components/ScoreBadge'
-import { ScoreBreakdown } from '@/components/ScoreBreakdown'
-import { MetricTable } from '@/components/MetricTable'
 import { TickerPill } from '@/components/TickerPill'
 import { LoadingState } from '@/components/LoadingState'
 import { ErrorState } from '@/components/ErrorState'
-import type { MetricRow } from '@/components/MetricTable'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 
 interface ArticleData {
@@ -39,14 +36,12 @@ interface ArticleData {
     reasonShown?: string
     extractedTickers: string[]
     extractedCompanies: string[]
-    scoreBreakdown: Record<string, number>
     confidence: number
   }
   source: {
     name: string
     domain: string
   }
-  metrics: MetricRow[]
 }
 
 export function ArticleDetailPage({ id }: { id: string }) {
@@ -75,7 +70,21 @@ export function ArticleDetailPage({ id }: { id: string }) {
   if (loading || !data) return <LoadingState />
 
   const { article, extraction, source } = data
-  const totalScore = Object.values(extraction.scoreBreakdown || {}).reduce((a, b) => a + b, 0)
+
+  function getTickerExcerpts(text: string, tickers: string[]): Record<string, string[]> {
+    const sentences = text.split(/(?<=[.!?])\s+|\n+/).filter(Boolean)
+    const excerpts: Record<string, string[]> = {}
+    for (const t of tickers) {
+      const pattern = new RegExp(`\\b${t}\\b`, 'i')
+      const matches = sentences.filter(s => pattern.test(s)).map(s => s.trim())
+      if (matches.length > 0) excerpts[t] = matches
+    }
+    return excerpts
+  }
+
+  const excerpts = article.cleanedText
+    ? getTickerExcerpts(article.cleanedText, extraction.extractedTickers)
+    : {}
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
@@ -130,24 +139,35 @@ export function ArticleDetailPage({ id }: { id: string }) {
           )}
 
           {extraction.reasonShown && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Why shown</p>
-              <p className="text-xs text-muted-foreground">{extraction.reasonShown}</p>
+            <p className="text-xs text-muted-foreground italic">{extraction.reasonShown}</p>
+          )}
+
+          {Object.keys(excerpts).length > 0 && (
+            <div className="space-y-3 pt-2 border-t border-[#1F1F1F]">
+              <p className="text-xs font-medium text-muted-foreground">Mentions by Ticker</p>
+              {extraction.extractedTickers.map((ticker) => {
+                const tickerExcerpts = excerpts[ticker]
+                if (!tickerExcerpts) return null
+                return (
+                  <div key={ticker} className="border-l-2 border-[#3B82F6]/40 pl-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-semibold text-[#F59E0B]">{ticker}</span>
+                      <span className="text-[11px] text-muted-foreground">{tickerExcerpts.length} mention{tickerExcerpts.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="space-y-1">
+                      {tickerExcerpts.map((excerpt, i) => (
+                        <p key={i} className="text-xs text-[#9CA3AF] leading-relaxed">
+                          {excerpt.slice(0, 300)}{excerpt.length > 300 ? '...' : ''}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
 
-          {extraction.scoreBreakdown && (
-            <ScoreBreakdown breakdown={extraction.scoreBreakdown} totalScore={totalScore} />
-          )}
-
-          {data.metrics.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Metrics</p>
-              <MetricTable rows={data.metrics} />
-            </div>
-          )}
-
-          {article.cleanedText && (
+          {Object.keys(excerpts).length === 0 && article.cleanedText && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Article Excerpt</p>
               <p className="text-xs text-muted-foreground leading-relaxed">
