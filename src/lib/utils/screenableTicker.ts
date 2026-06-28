@@ -9,6 +9,7 @@ const STOPLIST = new Set([
   'IWM', 'VOO', 'VTI', 'VT', 'VEA', 'VWO', 'BND', 'AGG', 'TLT', 'IEF', 'HYG', 'LQD',
   'GLD', 'SLV', 'USO', 'UNG', 'BITO', 'GBTC', 'IBIT', 'ETH', 'BTC', 'SOL', 'USDC', 'USDT',
   'ESG', 'SMA', 'SMAS',
+  'APAC', 'EMEA', 'ASIC', 'TNTC', 'NTSA', 'NTSI', 'EEA',
 ])
 
 const SOURCE_OWN_TICKERS: Record<string, string[]> = {
@@ -26,7 +27,7 @@ const SOURCE_OWN_TICKERS: Record<string, string[]> = {
   'franklintempleton.com': ['BEN'],
   'invesco.com': ['IVZ'],
   'ssga.com': ['STT'],
-  'apollo.com': ['APO'],
+  'apollo.com': ['APO', 'ATH', 'ARI', 'MFIC', 'EPF', 'AIM'],
   'kkr.com': ['KKR'],
   'aresmgmt.com': ['ARES'],
   'blueowl.com': ['OWL'],
@@ -36,7 +37,7 @@ const SOURCE_OWN_TICKERS: Record<string, string[]> = {
 }
 
 const EQUITY_CONTEXT = /\b(stock|stocks|share|shares|equity|equities|company|companies|ticker|tickers|holding|holdings|position|positions|name|names|buy|sell|owned|overweight|underweight|beneficiary|beneficiaries|exposure|portfolio|basket|constituent|constituents|top pick|best idea|conviction)\b/i
-const EXCHANGE_CONTEXT = /\b(NYSE|Nasdaq|NASDAQ|AMEX|NYSEARCA|LSE|TSX|HKEX|TSE|ASX)\s*[:：]/i
+const EXCHANGE_CONTEXT = /\b(NYSE|Nasdaq|NASDAQ|AMEX|NYSEARCA|LSE|TSX|HKEX|TSE|ASX)\s*:/i
 const BAD_CONTEXT = /\b(inflation|program|programme|spread|spreads|credit|index|indicator|model|language|central bank|ecb|policy|bond|bonds|yield|yields|rate|rates|purchase|purchases|facility|facilities|macro|gdp|cpi|hicp|pepp|quantitative|app purchases|natural language|raft|oass?|investment grade|ig credit)\b/i
 const COMPANY_SUFFIX_CONTEXT = /\b(inc|corp|corporation|ltd|limited|plc|sa|nv|ag|group|holdings|technologies|semiconductor|systems|bank|energy|pharma|therapeutics|software|capital)\b/i
 
@@ -61,7 +62,7 @@ export function isScreenableEquityTicker(
 
   if (new RegExp(`\\$${escapeRegExp(normalized)}\\b`).test(context)) return true
   if (EXCHANGE_CONTEXT.test(context)) return true
-  if (new RegExp(`\\b(?:NYSE|Nasdaq|NASDAQ|AMEX|NYSEARCA)\\s*[:：]\\s*${escapeRegExp(normalized)}\\b`).test(context)) return true
+  if (new RegExp(`\\b(?:NYSE|Nasdaq|NASDAQ|AMEX|NYSEARCA)\\s*:\\s*${escapeRegExp(normalized)}\\b`).test(context)) return true
   if (new RegExp(`\\([\\s$]*${escapeRegExp(normalized)}\\s*\\)`).test(context) && (EQUITY_CONTEXT.test(context) || COMPANY_SUFFIX_CONTEXT.test(context))) return true
   if (new RegExp(`\\b${escapeRegExp(normalized)}\\b`).test(context) && EQUITY_CONTEXT.test(context)) return true
 

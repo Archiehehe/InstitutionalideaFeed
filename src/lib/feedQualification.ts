@@ -62,6 +62,7 @@ const MEDIA_DOMAINS = [
 ]
 
 const TITLE_REJECT_RULES: Array<{ pattern: RegExp; pageType: PageType; rejectionCategory: RejectionCategory }> = [
+  { pattern: /^(insights|insights\s*&\s*news|investment management insights\s*&\s*research|overheard at apollo)$/i, pageType: 'category_landing_page', rejectionCategory: 'rejected_category_landing_page' },
   { pattern: /\b(compare|comparison tool|calculator|screener|fund comparison)\b/i, pageType: 'tool_page', rejectionCategory: 'rejected_tool_page' },
   { pattern: /\b(etfs?\s+vs\.?\s+mutual funds?|etf basics|mutual funds?|funds?|smas?|commingled funds?|prospectus)\b/i, pageType: 'fund_or_etf_page', rejectionCategory: 'rejected_fund_or_etf_page' },
   { pattern: /\b(what is|how to|guide|learn|education|investing basics|glossary|retirement|account|fees|forms)\b/i, pageType: 'education_page', rejectionCategory: 'rejected_education_page' },
@@ -70,6 +71,7 @@ const TITLE_REJECT_RULES: Array<{ pattern: RegExp; pageType: PageType; rejection
 ]
 
 const URL_REJECT_RULES: Array<{ pattern: RegExp; pageType: PageType; rejectionCategory: RejectionCategory }> = [
+  { pattern: /\/(insights|insights-news|insights-news\/insights|insights-news\/insights\/overheard-at-apollo)\/?$/i, pageType: 'category_landing_page', rejectionCategory: 'rejected_category_landing_page' },
   { pattern: /\/(education|learn|how-to|investing-basics|glossary)(\/|$)/i, pageType: 'education_page', rejectionCategory: 'rejected_education_page' },
   { pattern: /\/(tools?|calculator|compare|comparison)(\/|$)/i, pageType: 'tool_page', rejectionCategory: 'rejected_tool_page' },
   { pattern: /\/(funds?|etfs?|mutual-funds)(\/|$)/i, pageType: 'fund_or_etf_page', rejectionCategory: 'rejected_fund_or_etf_page' },

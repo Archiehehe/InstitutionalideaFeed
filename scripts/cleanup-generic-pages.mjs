@@ -19,17 +19,20 @@ const tickerStoplist = [
   'IWM', 'VOO', 'VTI', 'VT', 'VEA', 'VWO', 'BND', 'AGG', 'TLT', 'IEF', 'HYG', 'LQD',
   'GLD', 'SLV', 'USO', 'UNG', 'BITO', 'GBTC', 'IBIT', 'ETH', 'BTC', 'SOL', 'USDC', 'USDT',
   'ESG', 'SMA', 'SMAS',
+  'APAC', 'EMEA', 'ASIC', 'TNTC', 'NTSA', 'NTSI', 'EEA', 'ATH', 'ARI', 'MFIC', 'EPF', 'AIM',
 ]
 
 const hardRejected = await sql`
   update articles
   set status = 'rejected',
       rejection_reason = case
+        when title ~* '^(insights|insights[[:space:]]*&[[:space:]]*news|investment management insights[[:space:]]*&[[:space:]]*research|overheard at apollo)$' then 'rejected_category_landing_page'
         when title ~* '(compare|comparison tool|calculator|screener|fund comparison)' then 'rejected_tool_page'
         when title ~* '(ETF[s]? vs[.]? mutual funds?|ETF basics|mutual funds?|funds?|SMAs?|commingled funds?|prospectus)' then 'rejected_fund_or_etf_page'
         when title ~* '(what is|how to|guide|learn|education|investing basics|glossary|retirement|account|fees|forms)' then 'rejected_education_page'
         when title ~* '(ESG investing|responsible investing|sustainable investing overview)' then 'rejected_generic_marketing_page'
         when title ~* '(product|solutions|strategies|institutional solutions|advisor resources|client resources)' then 'rejected_product_page'
+        when url ~* '/(insights|insights-news|insights-news/insights|insights-news/insights/overheard-at-apollo)/?$' then 'rejected_category_landing_page'
         when url ~* '/(education|learn|how-to|investing-basics|glossary)(/|$)' then 'rejected_education_page'
         when url ~* '/(tools?|calculator|compare|comparison)(/|$)' then 'rejected_tool_page'
         when url ~* '/(funds?|etfs?|mutual-funds)(/|$)' then 'rejected_fund_or_etf_page'
@@ -41,7 +44,9 @@ const hardRejected = await sql`
   where status = 'saved'
     and (
       title ~* '(compare|comparison tool|calculator|screener|fund comparison|ETF[s]? vs[.]? mutual funds?|ETF basics|mutual funds?|funds?|SMAs?|commingled funds?|prospectus|what is|how to|guide|learn|education|investing basics|glossary|retirement|account|fees|forms|ESG investing|responsible investing|sustainable investing overview|product|solutions|strategies|institutional solutions|advisor resources|client resources)'
+      or title ~* '^(insights|insights[[:space:]]*&[[:space:]]*news|investment management insights[[:space:]]*&[[:space:]]*research|overheard at apollo)$'
       or url ~* '/(education|learn|how-to|investing-basics|glossary|tools?|calculator|compare|comparison|funds?|etfs?|mutual-funds|products?|solutions|strategies|resources|advisor-resources|client-resources|esg-investing)(/|$)'
+      or url ~* '/(insights|insights-news|insights-news/insights|insights-news/insights/overheard-at-apollo)/?$'
     )
   returning id
 `
