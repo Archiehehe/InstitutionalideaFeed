@@ -10,6 +10,16 @@ if (!databaseUrl) {
 }
 
 const sql = neon(databaseUrl)
+const tickerStoplist = [
+  'HICP', 'APP', 'PEPP', 'NLP', 'RAFT', 'IG', 'OAS', 'ABF', 'ECB', 'CPI', 'GDP', 'PMI',
+  'QE', 'QT', 'FX', 'EM', 'DM', 'AI', 'ML', 'LLM', 'ETF', 'ETFS', 'CEF', 'NAV', 'AUM',
+  'PE', 'VC', 'IRR', 'CAGR', 'YOY', 'QOQ', 'FED', 'BOE', 'BOJ', 'SEC', 'USD', 'EUR',
+  'JPY', 'GBP', 'RSS', 'PDF', 'FAQ', 'CEO', 'CFO', 'COO', 'IPO', 'IR', 'PR', 'FY',
+  'USA', 'US', 'UK', 'EU', 'ADR', 'ADS', 'NYSE', 'NASDAQ', 'AMEX', 'SPY', 'QQQ', 'DIA',
+  'IWM', 'VOO', 'VTI', 'VT', 'VEA', 'VWO', 'BND', 'AGG', 'TLT', 'IEF', 'HYG', 'LQD',
+  'GLD', 'SLV', 'USO', 'UNG', 'BITO', 'GBTC', 'IBIT', 'ETH', 'BTC', 'SOL', 'USDC', 'USDT',
+  'ESG', 'SMA', 'SMAS',
+]
 
 const hardRejected = await sql`
   update articles
@@ -74,9 +84,16 @@ const lowTickerRejected = await sql`
   from article_extractions e
   where e.article_id = a.id
     and a.status = 'saved'
-    and (
-      (jsonb_array_length(e.screenable_tickers) > 0 and jsonb_array_length(e.screenable_tickers) < 3)
-      or (jsonb_array_length(e.screenable_tickers) = 0 and jsonb_array_length(e.extracted_tickers) < 3)
+    and 3 > (
+      select count(distinct upper(value))::int
+      from jsonb_array_elements_text(
+        case
+          when jsonb_array_length(e.screenable_tickers) > 0 then e.screenable_tickers
+          else e.extracted_tickers
+        end
+      ) as ticker(value)
+      where upper(value) <> all(${tickerStoplist})
+        and upper(value) ~ '^[A-Z][A-Z0-9.-]{0,4}$'
     )
   returning a.id
 `

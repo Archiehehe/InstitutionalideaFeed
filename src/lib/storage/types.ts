@@ -69,6 +69,9 @@ export interface ArticleExtraction {
   id: string
   articleId: string
   firm?: string
+  sourceInstitution?: string
+  mentionedInstitutions?: string[]
+  primaryInstitution?: string
   sourceType?: string
   category?: string
   theme?: string
@@ -177,6 +180,25 @@ export interface ScanRun {
   articlesParsed: number
   articlesSaved: number
   errorsJson?: Record<string, unknown>
+}
+
+export interface SourceScanResult {
+  id: string
+  scanRunId: string
+  sourceId?: string
+  sourceName: string
+  sourceDomain: string
+  sourceTier?: 'core' | 'secondary' | 'archive'
+  status: 'completed' | 'failed' | 'no_urls'
+  urlsFound: number
+  urlsAttempted: number
+  savedCount: number
+  rejectedCount: number
+  failedCount: number
+  error?: string
+  startedAt: string
+  finishedAt?: string
+  createdAt: string
 }
 
 export interface ConvictionList {
@@ -306,6 +328,8 @@ export interface Store {
   createScanRun(run: Omit<ScanRun, 'id'>): Promise<ScanRun>
   updateScanRun(id: string, updates: Partial<ScanRun>): Promise<ScanRun | null>
   getScanRuns(limit?: number): Promise<ScanRun[]>
+  createSourceScanResult(result: Omit<SourceScanResult, 'id' | 'createdAt'>): Promise<SourceScanResult>
+  getLatestSourceScanResults(): Promise<SourceScanResult[]>
 
   // Conviction Lists
   getConvictionLists(): Promise<ConvictionList[]>

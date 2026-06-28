@@ -63,6 +63,7 @@ export function ArticleCard({
     { kind: 'sector', value: sector },
     { kind: 'pageType', value: pageType },
   ]).slice(0, 4)
+  const basketQualified = tickers.length >= 3
 
   return (
     <Card className="border border-[#1F1F1F] bg-[#0A0A0A] hover:border-[#3B82F6]/40 transition-colors shadow-sm">
@@ -113,18 +114,22 @@ export function ArticleCard({
         )}
 
         <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-[#1F1F1F]">
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-[#9CA3AF] hover:text-[#3B82F6] hover:bg-[#1A1A1A]" onClick={onSaveBasket}>
-            <Plus className="h-3 w-3" /> Basket
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-[#9CA3AF] hover:text-[#3B82F6] hover:bg-[#1A1A1A]" onClick={onRunMetrics}>
-            <TrendingUp className="h-3 w-3" /> Metrics
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-[#9CA3AF] hover:text-[#3B82F6] hover:bg-[#1A1A1A]" onClick={onAddAllToWatchlist}>
-            <Eye className="h-3 w-3" /> Watchlist
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-[#9CA3AF] hover:text-[#3B82F6] hover:bg-[#1A1A1A]" onClick={onAnalyze}>
-            <Zap className="h-3 w-3" /> Analyze
-          </Button>
+          {basketQualified && (
+            <>
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-[#9CA3AF] hover:text-[#3B82F6] hover:bg-[#1A1A1A]" onClick={onSaveBasket}>
+                <Plus className="h-3 w-3" /> Basket
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-[#9CA3AF] hover:text-[#3B82F6] hover:bg-[#1A1A1A]" onClick={onRunMetrics}>
+                <TrendingUp className="h-3 w-3" /> Metrics
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-[#9CA3AF] hover:text-[#3B82F6] hover:bg-[#1A1A1A]" onClick={onAddAllToWatchlist}>
+                <Eye className="h-3 w-3" /> Watchlist
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-[#9CA3AF] hover:text-[#3B82F6] hover:bg-[#1A1A1A]" onClick={onAnalyze}>
+                <Zap className="h-3 w-3" /> Analyze
+              </Button>
+            </>
+          )}
           <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-[#9CA3AF] hover:text-[#3B82F6] hover:bg-[#1A1A1A]" onClick={onMoreLikeThis}>
             <ThumbsUp className="h-3 w-3" />
           </Button>

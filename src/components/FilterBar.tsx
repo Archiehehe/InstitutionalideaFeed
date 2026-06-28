@@ -19,6 +19,8 @@ interface FilterBarProps {
   showScoreFilter?: boolean
   minScore?: number
   onMinScoreChange?: (v: number) => void
+  firmLabel?: string
+  sectorLabel?: string
 }
 
 export function FilterBar({
@@ -26,6 +28,8 @@ export function FilterBar({
   selectedFirm, selectedSector, selectedTheme,
   searchQuery = '',
   onFirmChange, onSectorChange, onThemeChange, onSearchChange,
+  firmLabel = 'All institutions',
+  sectorLabel = 'All sectors',
 }: FilterBarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -41,10 +45,10 @@ export function FilterBar({
       {firms.length > 0 && (
         <Select value={selectedFirm || 'all'} onValueChange={(v) => onFirmChange?.(v === 'all' ? '' : v ?? '')}>
           <SelectTrigger className="h-9 text-xs w-[130px] border-[#1F1F1F] bg-[#0A0A0A] text-[#9CA3AF]">
-            <SelectValue placeholder="All firms" />
+            <SelectValue placeholder={firmLabel} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All firms</SelectItem>
+            <SelectItem value="all">{firmLabel}</SelectItem>
             {firms.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -52,10 +56,10 @@ export function FilterBar({
       {sectors.length > 0 && (
         <Select value={selectedSector || 'all'} onValueChange={(v) => onSectorChange?.(v === 'all' ? '' : v ?? '')}>
           <SelectTrigger className="h-9 text-xs w-[130px] border-[#1F1F1F] bg-[#0A0A0A] text-[#9CA3AF]">
-            <SelectValue placeholder="All sectors" />
+            <SelectValue placeholder={sectorLabel} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All sectors</SelectItem>
+            <SelectItem value="all">{sectorLabel}</SelectItem>
             {sectors.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>

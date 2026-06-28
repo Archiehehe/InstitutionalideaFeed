@@ -173,9 +173,45 @@ await sql`
   where lower(domain) <> all(${Array.from(CORE_DOMAINS)})
 `
 
-console.log(
-  `Synced ${syncedDomains.size} institutional source domains (${coreDomainsSynced.size} core default-enabled).`,
-)
+const [coreEnabled] = await sql`
+  select count(*)::int as count
+  from sources
+  where enabled = true and source_tier = 'core'
+`
+const mediaEnabled = await sql`
+  select name, domain
+  from sources
+  where enabled = true
+`
+const enabledMediaRows = mediaEnabled.filter((row) => isMediaDomain(String(row.domain).toLowerCase()))
+const duplicateRows = await sql`
+  select lower(domain) as domain, count(*)::int as count
+  from sources
+  group by lower(domain)
+  having count(*) > 1
+`
+const coreRows = await sql`
+  select name, domain, enabled
+  from sources
+  where lower(domain) = any(${Array.from(CORE_DOMAINS)})
+  order by name
+`
+const enabledCoreDomains = new Set(coreRows.filter((row) => row.enabled).map((row) => String(row.domain).toLowerCase()))
+const missingCoreDomains = Array.from(CORE_DOMAINS).filter((domain) => !enabledCoreDomains.has(domain))
+
+console.log(`Synced ${syncedDomains.size} institutional source domains (${coreDomainsSynced.size} core registry domains).`)
+console.log(`Expected core enabled sources: ${CORE_DOMAINS.size}`)
+console.log(`Actual core enabled sources: ${Number(coreEnabled.count)}`)
+console.log(`Media/news enabled sources: ${enabledMediaRows.length}`)
+console.log(`Duplicate domains: ${duplicateRows.length}`)
+
+if (missingCoreDomains.length > 0) {
+  console.log(`Missing/disabled core domains: ${missingCoreDomains.join(', ')}`)
+}
+
+if (Number(coreEnabled.count) !== CORE_DOMAINS.size || enabledMediaRows.length > 0 || duplicateRows.length > 0) {
+  process.exitCode = 1
+}
 
 function isMediaDomain(domain) {
   return Array.from(MEDIA_BLACKLIST).some((blocked) => (

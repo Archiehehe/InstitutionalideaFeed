@@ -3,7 +3,7 @@ import type {
   Store, Source, Article, ArticleExtraction, Idea,
   Basket, BasketMember, WatchlistItem, MetricsSnapshot,
   UserFeedback, ScanRun, ConvictionList, ConvictionListMember,
-  Manager, ManagerHolding, ThirteenFOverlap
+  Manager, ManagerHolding, ThirteenFOverlap, SourceScanResult
 } from './types'
 
 const DB_PATH = 'data/local-dev-db'
@@ -266,6 +266,22 @@ export function createJsonStore(): Store {
       return items
         .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
         .slice(0, limit)
+    },
+    async createSourceScanResult(data) {
+      const items = await readCollection<SourceScanResult>('source_scan_results')
+      const item: SourceScanResult = { ...data, id: uuidv4(), createdAt: now() }
+      items.push(item)
+      await writeCollection('source_scan_results', items)
+      return item
+    },
+    async getLatestSourceScanResults() {
+      const items = await readCollection<SourceScanResult>('source_scan_results')
+      const bySource = new Map<string, SourceScanResult>()
+      for (const item of items.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())) {
+        const key = item.sourceId ?? item.sourceDomain
+        if (!bySource.has(key)) bySource.set(key, item)
+      }
+      return Array.from(bySource.values())
     },
 
     async getConvictionLists() {

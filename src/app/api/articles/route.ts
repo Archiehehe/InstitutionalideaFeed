@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const firm = searchParams.get('firm')
     const sector = searchParams.get('sector')
     const sourceType = searchParams.get('sourceType')
+    const sourceTier = searchParams.get('sourceTier')
     const saved = searchParams.get('saved')
     const sort = searchParams.get('sort') ?? 'newest'
     const { window, from, to } = parseWindow(searchParams)
@@ -34,22 +35,25 @@ export async function GET(request: NextRequest) {
       const extraction = await store.getExtraction(article.id)
       const source = await store.getSource(article.sourceId)
       const articleSourceType = extraction?.sourceType ?? source?.sourceType ?? 'unknown'
+      const articleFirm = extraction?.primaryInstitution ?? extraction?.sourceInstitution ?? source?.name ?? extraction?.firm
       const isSaved = savedArticleIds.has(article.id)
       const qualification = qualifyArticleForFeed(article, extraction, source)
       if (!qualification.qualified) continue
 
       const tickers = qualification.screenableTickers
 
-      if (firm && extraction?.firm !== firm) continue
+      if (firm && articleFirm !== firm) continue
       if (sector && extraction?.sector !== sector) continue
       if (sourceType && articleSourceType !== sourceType) continue
+      if (sourceTier && (source?.sourceTier ?? 'secondary') !== sourceTier) continue
       if (saved === 'true' && !isSaved) continue
       if (saved === 'false' && isSaved) continue
       if (search) {
         const haystack = [
           article.title,
           extraction?.reasonShown,
-          extraction?.firm,
+          articleFirm,
+          extraction?.mentionedInstitutions?.join(' '),
           extraction?.theme,
           extraction?.sector,
           extraction?.region,
@@ -67,7 +71,7 @@ export async function GET(request: NextRequest) {
         sourceType: articleSourceType,
         sourceClass: source?.sourceClass ?? 'primary_institutional',
         sourceTier: source?.sourceTier ?? 'secondary',
-        firm: extraction?.firm,
+        firm: articleFirm,
         publishedAt: article.publishedAt,
         theme: extraction?.theme,
         sector: extraction?.sector,

@@ -1,6 +1,6 @@
 import type { Article, ArticleExtraction, PageType, RejectionCategory, Source } from '@/lib/storage/types'
 import type { ExtractionResult } from '@/lib/ingestion/extractor'
-import { uniqueTickers } from '@/lib/ingestion/url'
+import { getValidatedScreenableTickers, isScreenableEquityTicker } from '@/lib/utils/screenableTicker'
 
 export type FeedQualificationArticle = Pick<Article, 'title' | 'url'> & {
   cleanedText?: string
@@ -87,42 +87,6 @@ const PAGE_TYPE_RULES: Array<{ pageType: PageType; pattern: RegExp }> = [
   { pageType: 'institutional_research_idea', pattern: /\b(research|insights|strategy|strategist|opportunities|stocks|companies)\b/i },
 ]
 
-const NON_SCREENABLE_TICKERS = new Set([
-  'SPY', 'QQQ', 'DIA', 'IWM', 'VOO', 'VTI', 'VT', 'VEA', 'VWO', 'BND', 'AGG',
-  'TLT', 'IEF', 'HYG', 'LQD', 'GLD', 'SLV', 'USO', 'UNG', 'BITO', 'GBTC', 'IBIT',
-  'ETH', 'BTC', 'SOL', 'USDC', 'USDT', 'ETF', 'ETFs', 'CEF', 'NAV', 'GDP', 'CPI',
-  'FED', 'ECB', 'BOJ', 'SEC', 'USD', 'EUR', 'JPY', 'GBP', 'AI', 'ESG', 'SMAs',
-].map((ticker) => ticker.toUpperCase()))
-
-const BOILERPLATE_TICKERS = new Set([
-  'RSS', 'PDF', 'FAQ', 'CEO', 'CFO', 'COO', 'IPO', 'IR', 'PR', 'FY', 'QOQ', 'YOY',
-  'USA', 'US', 'UK', 'EU', 'EM', 'DM', 'ADR', 'ADS', 'NYSE', 'NASDAQ', 'AMEX',
-])
-
-const SOURCE_OWN_TICKERS: Record<string, string[]> = {
-  'goldmansachs.com': ['GS'],
-  'morganstanley.com': ['MS'],
-  'jpmorgan.com': ['JPM'],
-  'privatebank.jpmorgan.com': ['JPM'],
-  'ubs.com': ['UBS'],
-  'privatebank.bankofamerica.com': ['BAC'],
-  'bankofamerica.com': ['BAC'],
-  'wellsfargo.com': ['WFC'],
-  'blackrock.com': ['BLK'],
-  'schwab.com': ['SCHW'],
-  'troweprice.com': ['TROW'],
-  'franklintempleton.com': ['BEN'],
-  'invesco.com': ['IVZ'],
-  'ssga.com': ['STT'],
-  'apollo.com': ['APO'],
-  'kkr.com': ['KKR'],
-  'aresmgmt.com': ['ARES'],
-  'blueowl.com': ['OWL'],
-  'carlyle.com': ['CG'],
-  'brookfield.com': ['BAM', 'BN'],
-  'northerntrust.com': ['NTRS'],
-}
-
 export function qualifyArticleForFeed(
   article: FeedQualificationArticle,
   extraction: FeedQualificationExtraction | null | undefined,
@@ -139,20 +103,20 @@ export function qualifyArticleForFeed(
 
   const hardReject = getHardReject(article)
   if (hardReject) {
-    return rejected(hardReject.pageType, hardReject.rejectionCategory, getScreenableTickers(extraction, source))
+    return rejected(hardReject.pageType, hardReject.rejectionCategory, getScreenableTickers(extraction, source, article))
   }
 
   const pageType = classifyPageType(article)
   const evidence = researchEvidenceText(article, extraction)
   if (!RESEARCH_QUALIFIER_PATTERN.test(evidence)) {
-    return rejected(pageType, 'rejected_not_research_idea', getScreenableTickers(extraction, source))
+    return rejected(pageType, 'rejected_not_research_idea', getScreenableTickers(extraction, source, article))
   }
 
   if (!ELIGIBLE_FEED_PAGE_TYPES.includes(pageType)) {
-    return rejected(pageType, rejectionForPageType(pageType), getScreenableTickers(extraction, source))
+    return rejected(pageType, rejectionForPageType(pageType), getScreenableTickers(extraction, source, article))
   }
 
-  const screenableTickers = getScreenableTickers(extraction, source)
+  const screenableTickers = getScreenableTickers(extraction, source, article)
   if (screenableTickers.length < 3) {
     return rejected(pageType, 'rejected_fewer_than_3_screenable_tickers', screenableTickers)
   }
@@ -189,16 +153,13 @@ export function isMediaSource(source?: Source | null): boolean {
 export function getScreenableTickers(
   extraction: FeedQualificationExtraction | null | undefined,
   source?: Source | null,
+  article?: FeedQualificationArticle,
 ): string[] {
-  const sourceDomain = source?.domain.toLowerCase()
-  const ownTickers = new Set(sourceDomain ? SOURCE_OWN_TICKERS[sourceDomain] ?? [] : [])
-
-  return uniqueTickers(extraction?.extractedTickers ?? [])
-    .filter((ticker) => /^[A-Z][A-Z0-9.-]{0,4}$/.test(ticker))
-    .filter((ticker) => !NON_SCREENABLE_TICKERS.has(ticker))
-    .filter((ticker) => !BOILERPLATE_TICKERS.has(ticker))
-    .filter((ticker) => !ownTickers.has(ticker))
+  const evidenceText = researchEvidenceText(article ?? { title: '', url: '' }, extraction)
+  return getValidatedScreenableTickers(extraction?.extractedTickers ?? [], evidenceText, source)
 }
+
+export { isScreenableEquityTicker }
 
 function getHardReject(article: FeedQualificationArticle) {
   const title = article.title ?? ''

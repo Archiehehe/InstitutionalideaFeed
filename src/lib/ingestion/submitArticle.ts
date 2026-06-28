@@ -176,7 +176,10 @@ export async function submitArticleUrl(
 
   const savedExtraction: Omit<ArticleExtraction, 'id' | 'createdAt'> = {
     articleId: article.id,
-    firm: extraction.firm,
+    firm: source.name,
+    sourceInstitution: source.name,
+    mentionedInstitutions: extraction.firm && extraction.firm !== source.name ? [extraction.firm] : [],
+    primaryInstitution: source.name,
     sourceType: extraction.sourceType,
     category: extraction.category,
     theme: extraction.theme,

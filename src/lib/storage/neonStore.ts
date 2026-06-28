@@ -256,6 +256,17 @@ export function createNeonStore(): Store {
     async getScanRuns(limit = 10) {
       return many('select * from scan_runs order by started_at desc limit $1', [limit])
     },
+    async createSourceScanResult(input) {
+      const [query, params] = insertQuery('source_scan_results', input as Row)
+      return one(query, params)
+    },
+    async getLatestSourceScanResults() {
+      return many(`
+        select distinct on (source_id) *
+        from source_scan_results
+        order by source_id, started_at desc
+      `)
+    },
 
     async getConvictionLists() {
       return many('select * from conviction_lists order by updated_at desc, display_name asc')

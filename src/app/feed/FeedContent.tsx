@@ -44,6 +44,7 @@ export function FeedPage() {
   const [search, setSearch] = useState('')
   const [firmFilter, setFirmFilter] = useState('')
   const [sectorFilter, setSectorFilter] = useState('')
+  const [sourceTierFilter, setSourceTierFilter] = useState('')
   const [scanning, setScanning] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -59,6 +60,7 @@ export function FeedPage() {
       if (search) params.set('search', search)
       if (firmFilter) params.set('firm', firmFilter)
       if (sectorFilter) params.set('sector', sectorFilter)
+      if (sourceTierFilter) params.set('sourceTier', sourceTierFilter)
       params.set('window', windowFilter)
 
       const res = await fetch(`/api/articles?${params}`)
@@ -70,13 +72,14 @@ export function FeedPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, firmFilter, sectorFilter, windowFilter])
+  }, [search, firmFilter, sectorFilter, sourceTierFilter, windowFilter])
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchArticles() }, [fetchArticles])
 
   const uniqueFirms = [...new Set(articles.map(a => a.firm).filter(Boolean) as string[])]
-  const uniqueSectors = [...new Set(articles.map(a => a.sector).filter(Boolean) as string[])]
+  const realSectorNames = new Set(['Communication Services', 'Consumer Discretionary', 'Consumer Staples', 'Energy', 'Financials', 'Health Care', 'Industrials', 'Information Technology', 'Materials', 'Real Estate', 'Utilities'])
+  const uniqueSectors = [...new Set(articles.map(a => a.sector).filter((sector): sector is string => Boolean(sector) && realSectorNames.has(sector as string)))]
 
   const handleFeedback = async (articleId: string, action: string) => {
     await fetch('/api/feedback', {
@@ -141,7 +144,23 @@ export function FeedPage() {
           onFirmChange={setFirmFilter}
           onSectorChange={setSectorFilter}
           onSearchChange={setSearch}
+          firmLabel="All institutions"
+          sectorLabel="All sectors"
         />
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-xs text-[#9CA3AF]">Tier</span>
+          <Select value={sourceTierFilter || 'all'} onValueChange={(value) => setSourceTierFilter(!value || value === 'all' ? '' : value)}>
+            <SelectTrigger className="h-9 w-[130px] border-[#1F1F1F] bg-[#0A0A0A] text-xs text-[#D1D5DB]">
+              <SelectValue placeholder="All tiers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All tiers</SelectItem>
+              <SelectItem value="core">Core</SelectItem>
+              <SelectItem value="secondary">Secondary</SelectItem>
+              <SelectItem value="archive">Archive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="mb-4 flex items-center gap-2">
           <span className="text-xs text-[#9CA3AF]">Window</span>
           <Select value={windowFilter} onValueChange={handleWindowChange}>

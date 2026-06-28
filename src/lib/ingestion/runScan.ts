@@ -17,6 +17,7 @@ export interface ScanResult {
   errors: string[]
   results: ScanItemResult[]
   message?: string
+  sourceCapApplied?: boolean
 }
 
 export interface ScanItemResult {
@@ -27,9 +28,12 @@ export interface ScanItemResult {
   rejected?: boolean
   reason?: string
   error?: string
+  sourceId?: string
+  sourceDomain?: string
 }
 
 const DEFAULT_SCAN_CONCURRENCY = 6
+const DEFAULT_MAX_SOURCES_PER_RUN = 40
 const DEFAULT_MAX_TOTAL_URLS = 200
 
 export async function runScan(): Promise<ScanResult> {
@@ -44,7 +48,10 @@ export async function runScan(): Promise<ScanResult> {
     articlesSaved: 0,
   })
 
-  const sources = await getEnabledSources()
+  const allEnabledSources = await getEnabledSources()
+  const maxSourcesPerRun = Math.max(1, Number(process.env.SCAN_MAX_SOURCES_PER_RUN ?? DEFAULT_MAX_SOURCES_PER_RUN))
+  const sources = allEnabledSources.slice(0, maxSourcesPerRun)
+  const sourceCapApplied = allEnabledSources.length > sources.length
   if (sources.length === 0) {
     const finishedAt = new Date().toISOString()
     await store.updateScanRun(scanRun.id, {
@@ -70,6 +77,7 @@ export async function runScan(): Promise<ScanResult> {
       totalFailed: 0,
       results: [],
       message: 'No enabled sources configured.',
+      sourceCapApplied: false,
     }
   }
 
@@ -106,6 +114,8 @@ export async function runScan(): Promise<ScanResult> {
         return {
           ok: true,
           source: source.name,
+          sourceId: source.id,
+          sourceDomain: source.domain,
           url: fetched.url,
           rejected: true,
           reason: 'duplicate',
@@ -116,6 +126,8 @@ export async function runScan(): Promise<ScanResult> {
         return {
           ok: true,
           source: source.name,
+          sourceId: source.id,
+          sourceDomain: source.domain,
           url: fetched.url,
           saved: true,
         }
@@ -124,6 +136,8 @@ export async function runScan(): Promise<ScanResult> {
       return {
         ok: true,
         source: source.name,
+        sourceId: source.id,
+        sourceDomain: source.domain,
         url: fetched.url,
         rejected: true,
         reason: 'reason' in result ? result.reason : 'duplicate',
@@ -132,6 +146,8 @@ export async function runScan(): Promise<ScanResult> {
       return {
         ok: false,
         source: source.name,
+        sourceId: source.id,
+        sourceDomain: source.domain,
         url: fetched.url,
         error: error instanceof Error ? error.message : String(error),
       }
@@ -143,6 +159,8 @@ export async function runScan(): Promise<ScanResult> {
     .map((result) => ({
       ok: false,
       source: result.source.name,
+      sourceId: result.source.id,
+      sourceDomain: result.source.domain,
       error: result.error,
     }))
 
@@ -162,8 +180,45 @@ export async function runScan(): Promise<ScanResult> {
     urlsFound: fetchedItems.length,
     articlesParsed: totalParsed,
     articlesSaved: totalSaved,
-    errorsJson: results.length > 0 ? { errors, results } : undefined,
+    errorsJson: results.length > 0 ? {
+      errors,
+      results,
+      sourceCapApplied,
+      sourceCap: maxSourcesPerRun,
+      enabledSourcesAvailable: allEnabledSources.length,
+    } : undefined,
   })
+
+  const resultsBySourceId = new Map<string, ScanItemResult[]>()
+  for (const result of itemResults) {
+    if (!result.sourceId) continue
+    resultsBySourceId.set(result.sourceId, [...(resultsBySourceId.get(result.sourceId) ?? []), result])
+  }
+
+  for (const sourceResult of sourceResults) {
+    const sourceItems = resultsBySourceId.get(sourceResult.source.id) ?? []
+    const sourceFailure = !sourceResult.ok ? sourceResult.error : undefined
+    const savedCount = sourceItems.filter((result) => result.saved).length
+    const rejectedCount = sourceItems.filter((result) => result.rejected).length
+    const failedCount = sourceItems.filter((result) => !result.ok).length + (sourceFailure ? 1 : 0)
+    const startedAt = scanRun.startedAt
+    await store.createSourceScanResult({
+      scanRunId: scanRun.id,
+      sourceId: sourceResult.source.id,
+      sourceName: sourceResult.source.name,
+      sourceDomain: sourceResult.source.domain,
+      sourceTier: sourceResult.source.sourceTier,
+      status: sourceFailure ? 'failed' : sourceResult.urls.length === 0 ? 'no_urls' : 'completed',
+      urlsFound: sourceResult.urls.length,
+      urlsAttempted: sourceItems.length,
+      savedCount,
+      rejectedCount,
+      failedCount,
+      error: sourceFailure,
+      startedAt,
+      finishedAt: new Date().toISOString(),
+    })
+  }
 
   return {
     scanRunId: scanRun.id,
@@ -178,6 +233,8 @@ export async function runScan(): Promise<ScanResult> {
     totalFailed,
     errors,
     results,
+    message: sourceCapApplied ? `Scanned first ${sources.length} of ${allEnabledSources.length} enabled sources.` : undefined,
+    sourceCapApplied,
   }
 }
 

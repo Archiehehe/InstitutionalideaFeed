@@ -108,6 +108,9 @@ alter table article_extractions alter column id set default gen_random_uuid();
 alter table article_extractions add column if not exists page_type text;
 alter table article_extractions add column if not exists rejection_category text;
 alter table article_extractions add column if not exists screenable_tickers jsonb not null default '[]';
+alter table article_extractions add column if not exists source_institution text;
+alter table article_extractions add column if not exists mentioned_institutions jsonb not null default '[]';
+alter table article_extractions add column if not exists primary_institution text;
 
 create unique index if not exists idx_article_extractions_article_unique on article_extractions(article_id);
 create index if not exists idx_article_extractions_firm on article_extractions(firm);
@@ -237,6 +240,30 @@ create table if not exists scan_runs (
 alter table scan_runs alter column id set default gen_random_uuid();
 
 create index if not exists idx_scan_runs_started_at on scan_runs(started_at desc);
+
+create table if not exists source_scan_results (
+  id uuid primary key default gen_random_uuid(),
+  scan_run_id text,
+  source_id text,
+  source_name text not null,
+  source_domain text not null,
+  source_tier text,
+  status text not null default 'completed',
+  urls_found integer not null default 0,
+  urls_attempted integer not null default 0,
+  saved_count integer not null default 0,
+  rejected_count integer not null default 0,
+  failed_count integer not null default 0,
+  error text,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table source_scan_results alter column id set default gen_random_uuid();
+create index if not exists idx_source_scan_results_scan_run on source_scan_results(scan_run_id);
+create index if not exists idx_source_scan_results_source on source_scan_results(source_id);
+create index if not exists idx_source_scan_results_started_at on source_scan_results(started_at desc);
 
 create table if not exists conviction_lists (
   id uuid primary key default gen_random_uuid(),

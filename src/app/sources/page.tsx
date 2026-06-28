@@ -25,12 +25,30 @@ interface SourceItem {
   enabled: boolean
   qualityScore: number
   notes?: string
+  lastScannedAt?: string
+  lastScanStatus?: 'completed' | 'failed' | 'no_urls'
+  lastScanError?: string
+  lastUrlsFound?: number
+  lastSavedCount?: number
+  qualifiedArticleCount?: number
+}
+
+interface SourcesSummary {
+  totalSources: number
+  enabledSources: number
+  enabledCoreSources: number
+  enabledMediaSources: number
+  sourcesScannedInLastRun: number
+  sourcesProducedQualifyingArticles: number
+  sourcesProducedNoQualifyingArticles: number
+  sourcesFailedInLastRun: number
 }
 
 const EMPTY_SOURCE = { name: '', domain: '', sourceType: 'primary', rssUrl: '', parserType: 'generic', enabled: true, qualityScore: 5 }
 
 export default function SourcesPage() {
   const [sources, setSources] = useState<SourceItem[]>([])
+  const [summary, setSummary] = useState<SourcesSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState(EMPTY_SOURCE)
@@ -45,7 +63,8 @@ export default function SourcesPage() {
       const res = await fetch('/api/sources')
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
-      setSources(data)
+      setSources(Array.isArray(data) ? data : data.sources)
+      setSummary(Array.isArray(data) ? null : data.summary)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load')
     } finally {
@@ -182,6 +201,15 @@ export default function SourcesPage() {
         </div>
       </div>
 
+      {summary && (
+        <div className="mb-5 grid gap-2 md:grid-cols-4">
+          <SummaryCell label="Enabled core" value={`${summary.enabledCoreSources}/40`} />
+          <SummaryCell label="Enabled media" value={String(summary.enabledMediaSources)} tone={summary.enabledMediaSources === 0 ? 'good' : 'bad'} />
+          <SummaryCell label="Scanned last run" value={String(summary.sourcesScannedInLastRun)} />
+          <SummaryCell label="Produced feed rows" value={`${summary.sourcesProducedQualifyingArticles} sources`} />
+        </div>
+      )}
+
       {sources.length === 0 ? (
         <EmptyState
           title="No sources configured"
@@ -217,6 +245,9 @@ export default function SourcesPage() {
                           <TableHead>Class</TableHead>
                           <TableHead>Tier</TableHead>
                           <TableHead>Quality</TableHead>
+                          <TableHead>Feed rows</TableHead>
+                          <TableHead>Last scan</TableHead>
+                          <TableHead>Scan result</TableHead>
                           <TableHead>Enabled</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
@@ -233,6 +264,16 @@ export default function SourcesPage() {
                               <Badge variant="outline" className="text-xs capitalize">{s.sourceTier ?? 'secondary'}</Badge>
                             </TableCell>
                             <TableCell className="text-xs">{s.qualityScore}/10</TableCell>
+                            <TableCell className="text-xs">{s.qualifiedArticleCount ?? 0}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{formatDate(s.lastScannedAt)}</TableCell>
+                            <TableCell className="max-w-[220px] text-xs">
+                              <div className="flex flex-col gap-1">
+                                <Badge variant={s.lastScanStatus === 'failed' ? 'destructive' : 'outline'} className="w-fit text-xs">
+                                  {formatScanStatus(s)}
+                                </Badge>
+                                {s.lastScanError && <span className="truncate text-red-400" title={s.lastScanError}>{s.lastScanError}</span>}
+                              </div>
+                            </TableCell>
                             <TableCell>
                               <Switch checked={s.enabled} onCheckedChange={(v) => handleToggle(s.id, v)} />
                             </TableCell>
@@ -287,4 +328,26 @@ export default function SourcesPage() {
 
 function formatSourceClass(value: string): string {
   return value.replace(/_/g, ' ')
+}
+
+function formatDate(value?: string): string {
+  if (!value) return 'Never'
+  return new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+function formatScanStatus(source: SourceItem): string {
+  if (!source.lastScanStatus) return 'Never scanned'
+  if (source.lastScanStatus === 'failed') return 'Failed'
+  if (source.lastScanStatus === 'no_urls') return 'No URLs'
+  return `${source.lastSavedCount ?? 0} saved / ${source.lastUrlsFound ?? 0} URLs`
+}
+
+function SummaryCell({ label, value, tone }: { label: string; value: string; tone?: 'good' | 'bad' }) {
+  const toneClass = tone === 'good' ? 'text-emerald-400' : tone === 'bad' ? 'text-red-400' : 'text-[#E5E7EB]'
+  return (
+    <div className="rounded-md border border-[#1F1F1F] bg-[#0A0A0A] px-3 py-2">
+      <div className="text-[11px] uppercase tracking-wide text-[#6B7280]">{label}</div>
+      <div className={`text-lg font-semibold ${toneClass}`}>{value}</div>
+    </div>
+  )
 }
