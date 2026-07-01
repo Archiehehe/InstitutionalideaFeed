@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
-  Rss, FolderKanban, Eye, Radio, Settings, DollarSign, ListChecks, Activity,
+  Rss, FolderKanban, Eye, Radio, Settings, DollarSign, ListChecks, Activity, Search,
 } from 'lucide-react'
 
 const SHOW_ADMIN = process.env.NEXT_PUBLIC_SHOW_ADMIN_TOOLS === 'true'
@@ -12,6 +12,7 @@ const SHOW_ADMIN = process.env.NEXT_PUBLIC_SHOW_ADMIN_TOOLS === 'true'
 const NAV_ITEMS = [
   { href: '/feed', label: 'Feed', icon: Rss },
   { href: '/conviction-lists', label: 'Conviction Lists', icon: ListChecks },
+  { href: '/sell-side-list-finder', label: 'Sell-Side Finder', icon: Search },
   { href: '/baskets', label: 'Baskets', icon: FolderKanban },
   { href: '/watchlist', label: 'Watchlist', icon: Eye },
   ...(SHOW_ADMIN ? [
