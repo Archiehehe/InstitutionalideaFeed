@@ -18,7 +18,7 @@ export function validateListCandidate(candidate: SellSideListCandidate): Validat
     errors.push('List name is required.')
   }
 
-  if (!candidate.sourceUrl && !['manual', 'csv', 'paste'].includes(candidate.sourceType)) {
+  if (!candidate.sourceUrl && !['manual', 'csv', 'paste', 'media_summary'].includes(candidate.sourceType)) {
     errors.push('Source URL is required for non-manual source types.')
   }
 

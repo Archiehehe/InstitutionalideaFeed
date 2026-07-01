@@ -10,13 +10,14 @@ export async function POST() {
         institution: candidate.institution,
         listName: candidate.listName,
         success: result.success,
+        listId: result.listId,
         errors: result.errors,
         warnings: result.warnings,
       })
     }
     const succeeded = results.filter((r) => r.success).length
     const failed = results.filter((r) => !r.success).length
-    return Response.json({ imported: succeeded, failed, results })
+    return Response.json({ imported: succeeded, failed, results, total: results.length })
   } catch (error) {
     return handleApiError(error)
   }

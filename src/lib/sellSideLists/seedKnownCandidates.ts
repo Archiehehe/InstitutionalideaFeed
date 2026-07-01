@@ -10,6 +10,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     theme: 'Infrastructure software',
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'SNOW', action: 'buy' },
       { ticker: 'DDOG', action: 'buy' },
@@ -26,6 +27,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     year: 2026,
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'AMZN', action: 'buy' },
       { ticker: 'BA', action: 'buy' },
@@ -47,6 +49,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     sector: 'Application software',
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'HUBS', action: 'buy' },
       { ticker: 'KVYO', action: 'buy' },
@@ -65,6 +68,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     theme: 'AI-hit software rebound',
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'MSFT', action: 'buy' },
       { ticker: 'INTU', action: 'buy' },
@@ -84,6 +88,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     year: 2026,
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'ACAD', action: 'buy' },
       { ticker: 'LNT', action: 'buy' },
@@ -105,6 +110,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     sector: 'TMT',
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'AMZN', action: 'buy' },
       { ticker: 'PLTR', action: 'buy' },
@@ -127,6 +133,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     year: 2026,
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'MCHP', action: 'buy' },
       { ticker: 'USB', action: 'buy' },
@@ -150,6 +157,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     sector: 'Application software',
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'BOX', action: 'buy' },
       { ticker: 'NAVN', action: 'buy' },
@@ -164,6 +172,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     sector: 'Software',
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'ADP', action: 'buy' },
       { ticker: 'NOW', action: 'buy' },
@@ -181,6 +190,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     sector: 'Technology, Media, Telecom',
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'MELI', action: 'buy' },
       { ticker: 'TKO', action: 'buy' },
@@ -200,6 +210,7 @@ export const SEED_CANDIDATES: SellSideListCandidate[] = [
     sector: 'Retail',
     sourceType: 'media_summary',
     confidence: 'needs_review',
+    importedFrom: '2026_seed',
     members: [
       { ticker: 'AMZN', action: 'buy' },
       { ticker: 'GPC', action: 'buy' },

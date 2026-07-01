@@ -3,6 +3,7 @@ import { getEnabledSources } from './sources'
 import { submitArticleUrl } from './submitArticle'
 import { isArticleCandidateUrl } from './urlFilter'
 import { getParserForSource } from '@/lib/sourceParsers'
+import { runWithConcurrency } from '@/lib/utils/runWithConcurrency'
 
 export interface ScanResult {
   scanRunId: string
@@ -35,7 +36,8 @@ export interface ScanItemResult {
   sourceDomain?: string
 }
 
-const DEFAULT_SCAN_CONCURRENCY = 6
+const DEFAULT_SCAN_SOURCE_CONCURRENCY = 4
+const DEFAULT_SCAN_URL_CONCURRENCY = 8
 const DEFAULT_MAX_SOURCES_PER_RUN = 40
 const DEFAULT_MAX_TOTAL_URLS = 200
 
@@ -86,10 +88,11 @@ export async function runScan(): Promise<ScanResult> {
     }
   }
 
-  const concurrency = Math.max(1, Number(process.env.SCAN_CONCURRENCY ?? DEFAULT_SCAN_CONCURRENCY))
+  const sourceConcurrency = Math.max(1, Number(process.env.SCAN_SOURCE_CONCURRENCY ?? DEFAULT_SCAN_SOURCE_CONCURRENCY))
+  const urlConcurrency = Math.max(1, Number(process.env.SCAN_URL_CONCURRENCY ?? DEFAULT_SCAN_URL_CONCURRENCY))
   const maxTotalUrls = Math.max(1, Number(process.env.SCAN_MAX_TOTAL_URLS ?? DEFAULT_MAX_TOTAL_URLS))
 
-  const sourceResults = await runBatched(sources, concurrency, async (source) => {
+  const sourceResults = await runWithConcurrency(sources, sourceConcurrency, async (source) => {
     try {
       const parser = getParserForSource(source)
       const urls = await parser.discoverArticleUrls(source)
@@ -138,7 +141,7 @@ export async function runScan(): Promise<ScanResult> {
     }).catch(() => {})
   }
 
-  const itemResults = await runBatched(fetchedItems, concurrency, async ({ source, fetched }) => {
+  const itemResults = await runWithConcurrency(fetchedItems, urlConcurrency, async ({ source, fetched }) => {
     const urlResult = {
       scanRunId: scanRun.id,
       sourceId: source.id,
@@ -314,24 +317,4 @@ export async function runScan(): Promise<ScanResult> {
   }
 }
 
-async function runBatched<T, R>(
-  items: T[],
-  concurrency: number,
-  worker: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const batches: T[][] = []
-  for (let index = 0; index < items.length; index += concurrency) {
-    batches.push(items.slice(index, index + concurrency))
-  }
 
-  const results: R[] = []
-  for (const batch of batches) {
-    const settled = await Promise.allSettled(batch.map((item) => worker(item)))
-    for (const item of settled) {
-      if (item.status === 'fulfilled') {
-        results.push(item.value)
-      }
-    }
-  }
-  return results
-}

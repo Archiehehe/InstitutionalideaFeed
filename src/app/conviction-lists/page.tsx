@@ -159,8 +159,15 @@ export default function ConvictionListsPage() {
     setSeedResult(null)
     const res = await fetch('/api/conviction-lists/import-seed', { method: 'POST' })
     const result = await res.json()
-    setSeedResult(`Imported: ${result.imported}, Failed: ${result.failed}${result.failed > 0 ? '. Check console for details.' : ''}`)
-    if (result.failed > 0) console.error('Seed import failures:', result.results?.filter((r: { success: boolean }) => !r.success))
+    const failedItems = result.results?.filter((r: { success: boolean }) => !r.success) ?? []
+    if (failedItems.length > 0) {
+      const details = failedItems.map((r: { institution: string; listName: string; errors: string[] }) =>
+        `${r.institution} ${r.listName}: ${r.errors.join('; ')}`
+      ).join('\n')
+      setSeedResult(`Imported: ${result.imported}, Failed: ${result.failed}\n${details}`)
+    } else {
+      setSeedResult(`Imported ${result.imported} lists successfully.`)
+    }
     await load()
   }
 
@@ -219,7 +226,7 @@ export default function ConvictionListsPage() {
             <Search className="h-3 w-3" /> Search Queries
           </Button>
           <Button variant="outline" size="sm" className="gap-1" onClick={handleImportSeed}>
-            <Database className="h-3 w-3" /> Seed Known 2026
+            <Database className="h-3 w-3" /> Import Starter Lists
           </Button>
           <Dialog open={pasteDialogOpen} onOpenChange={setPasteDialogOpen}>
             <DialogTrigger>
@@ -290,7 +297,7 @@ export default function ConvictionListsPage() {
       </div>
 
       {seedResult && (
-        <div className="rounded-md border border-green-700 bg-green-900/20 px-3 py-2 text-xs text-green-400">
+        <div className="rounded-md border border-green-700 bg-green-900/20 px-3 py-2 text-xs text-green-400 whitespace-pre-wrap">
           {seedResult}
         </div>
       )}
@@ -308,7 +315,7 @@ export default function ConvictionListsPage() {
           title="No conviction lists imported yet."
           description="Import seed candidates, paste a list, or add a verified bank stock-pick list with 3+ screenable public equity tickers."
           actions={[
-            { label: 'Seed Known 2026 Candidates', onClick: handleImportSeed },
+            { label: 'Import Starter Lists', onClick: handleImportSeed },
             { label: 'Paste a List', onClick: () => setPasteDialogOpen(true) },
             { label: 'Search Queries', onClick: handleLoadQueries },
           ]}

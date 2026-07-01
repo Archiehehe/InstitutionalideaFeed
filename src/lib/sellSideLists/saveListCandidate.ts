@@ -20,8 +20,13 @@ export async function saveListCandidate(candidate: SellSideListCandidate): Promi
 
   const existing = await store.getConvictionList(slug)
   if (existing) {
-    return { success: false, errors: ['A list with this slug already exists.'], warnings: validation.warnings }
+    return { success: true, listId: existing.id, errors: [], warnings: validation.warnings }
   }
+
+  const validSourceTypes = ['official_page', 'official_pdf', 'media_summary', 'manual', 'csv', 'paste', 'api'] as const
+  const sourceType = validSourceTypes.includes(candidate.sourceType as typeof validSourceTypes[number])
+    ? candidate.sourceType
+    : 'manual'
 
   const list = await store.createConvictionList({
     slug,
@@ -34,9 +39,15 @@ export async function saveListCandidate(candidate: SellSideListCandidate): Promi
     sector: candidate.sector,
     region: candidate.region,
     sourceUrl: candidate.sourceUrl,
-    sourceType: candidate.sourceType === 'media_summary' ? 'manual' : (candidate.sourceType === 'official_page' ? 'official_page' : candidate.sourceType === 'official_pdf' ? 'official_pdf' : 'manual'),
+    sourceType,
+    sourcePublisher: candidate.sourcePublisher,
     accessStatus: 'public',
     confidence: candidate.confidence,
+    reviewStatus: candidate.reviewStatus,
+    rawSourceTitle: candidate.rawSourceTitle,
+    rawSourceExcerpt: candidate.rawSourceExcerpt,
+    importedFrom: candidate.importedFrom,
+    publishedAt: candidate.publishedAt,
     notes: [candidate.rawSourceExcerpt, `Imported from: ${candidate.importedFrom ?? 'manual'}`].filter(Boolean).join('\n') || undefined,
   })
 
@@ -46,7 +57,6 @@ export async function saveListCandidate(candidate: SellSideListCandidate): Promi
       ticker: member.ticker.toUpperCase(),
       companyName: member.companyName,
       rank: member.rank ?? index + 1,
-      weight: member.rank ? undefined : undefined,
       action: member.action,
       note: member.note,
       sourceText: member.sourceText,

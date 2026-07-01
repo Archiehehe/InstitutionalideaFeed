@@ -7,14 +7,18 @@ import {
   Rss, FolderKanban, Eye, Radio, Settings, DollarSign, ListChecks, Activity,
 } from 'lucide-react'
 
+const SHOW_ADMIN = process.env.NEXT_PUBLIC_SHOW_ADMIN_TOOLS === 'true'
+
 const NAV_ITEMS = [
   { href: '/feed', label: 'Feed', icon: Rss },
   { href: '/conviction-lists', label: 'Conviction Lists', icon: ListChecks },
   { href: '/baskets', label: 'Baskets', icon: FolderKanban },
   { href: '/watchlist', label: 'Watchlist', icon: Eye },
-  { href: '/sources', label: 'Sources', icon: Radio },
-  { href: '/diagnostics', label: 'Diagnostics', icon: Activity },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  ...(SHOW_ADMIN ? [
+    { href: '/sources', label: 'Sources', icon: Radio },
+    { href: '/diagnostics', label: 'Diagnostics', icon: Activity },
+    { href: '/settings', label: 'Settings', icon: Settings },
+  ] : []),
 ]
 
 export function NavSidebar() {

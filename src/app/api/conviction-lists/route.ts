@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
         .filter((ticker) => isScreenableEquityTicker(ticker)),
     ))
 
-    if (tickers.length < 5) {
-      return Response.json({ error: 'Conviction Lists require at least 5 screenable public equity tickers.' }, { status: 422 })
+    if (tickers.length < 3) {
+      return Response.json({ error: 'Conviction Lists require at least 3 screenable public equity tickers.' }, { status: 422 })
     }
 
     const displayName = `${institution} ${listName}`
