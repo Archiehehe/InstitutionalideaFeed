@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingState } from '@/components/LoadingState'
 import { ErrorState } from '@/components/ErrorState'
-import { ArrowLeft, Save, PlusCircle, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Save, PlusCircle, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 interface ConvictionListMember {
   id: string
@@ -43,62 +44,96 @@ export function ConvictionListDetailPage({ id }: { id: string }) {
   const [data, setData] = useState<ConvictionListData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [actionStatus, setActionStatus] = useState<{ type: 'basket' | 'watchlist' | 'review', message: string, variant: 'default' | 'destructive' | 'success' } | null>(null)
+  const [isActionRunning, setIsActionRunning] = useState(false)
   const router = useRouter()
+  const fetchList = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/conviction-lists/${id}`)
+      if (!res.ok) throw new Error('Conviction list not found')
+      const data = await res.json()
+      setData(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load')
+    } finally {
+      setLoading(false)
+    }
+  }, [id])
 
   useEffect(() => {
-    const fetchList = async () => {
-      try {
-        const res = await fetch(`/api/conviction-lists/${id}`)
-        if (!res.ok) throw new Error('Conviction list not found')
-        const data = await res.json()
-        setData(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load')
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchList()
-  }, [id])
+  }, [fetchList])
 
   if (error) return <ErrorState message={error} />
   if (loading || !data) return <LoadingState />
 
   const handleReviewAction = async (action: 'verified' | 'needs_review' | 'rejected') => {
-    // Implement review action PATCH to /api/conviction-lists/${id}
-    await fetch(`/api/conviction-lists/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reviewStatus: action, confidence: action === 'rejected' ? 'needs_review' : action === 'verified' ? 'verified' : 'needs_review' }),
-    })
-    router.refresh()
+    setIsActionRunning(true)
+    setActionStatus(null)
+    try {
+        const res = await fetch(`/api/conviction-lists/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reviewStatus: action, confidence: action === 'rejected' ? 'needs_review' : action === 'verified' ? 'verified' : 'needs_review' }),
+        })
+        if (!res.ok) throw new Error('Failed to update status')
+        await fetchList()
+        setActionStatus({ type: 'review', message: `Status updated to ${action}`, variant: 'success' })
+    } catch (err) {
+        setActionStatus({ type: 'review', message: 'Failed to update status', variant: 'destructive' })
+    } finally {
+        setIsActionRunning(false)
+    }
   }
 
   const handleSaveAsBasket = async () => {
-    // POST /api/baskets
-    const res = await fetch('/api/baskets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: `${data.institution} ${data.listName}`, tickers: data.tickers }),
-    })
-    if (res.ok) alert('Basket saved')
+    setIsActionRunning(true)
+    setActionStatus(null)
+    try {
+        const res = await fetch('/api/baskets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: `${data.institution} ${data.listName}`, tickers: data.tickers }),
+        })
+        const result = await res.json()
+        if (result.duplicate) {
+            setActionStatus({ type: 'basket', message: 'Basket already exists', variant: 'default' })
+        } else if (!res.ok) {
+            throw new Error(result.error || 'Failed to save basket')
+        } else {
+            setActionStatus({ type: 'basket', message: 'Basket saved successfully', variant: 'success' })
+        }
+    } catch (err) {
+        setActionStatus({ type: 'basket', message: err instanceof Error ? err.message : 'Failed to save basket', variant: 'destructive' })
+    } finally {
+        setIsActionRunning(false)
+    }
   }
 
   const handleAddToWatchlist = async () => {
-    // POST /api/watchlist
+    setIsActionRunning(true)
+    setActionStatus(null)
     let added = 0
     let skipped = 0
+    let failed: string[] = []
+    
     for(const ticker of data.tickers) {
-        const res = await fetch('/api/watchlist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ticker }),
-        })
-        const result = await res.json()
-        if (result.duplicate) skipped++
-        else added++
+        try {
+            const res = await fetch('/api/watchlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ticker }),
+            })
+            const result = await res.json()
+            if (!res.ok) failed.push(ticker)
+            else if (result.duplicate) skipped++
+            else added++
+        } catch (err) {
+            failed.push(ticker)
+        }
     }
-    alert(`Added ${added}, skipped ${skipped}`)
+    setActionStatus({ type: 'watchlist', message: `Added ${added}, skipped ${skipped}, failed ${failed.length} ${failed.length > 0 ? `(${failed.join(', ')})` : ''}`, variant: failed.length > 0 ? 'destructive' : 'success' })
+    setIsActionRunning(false)
   }
 
   return (
@@ -107,16 +142,23 @@ export function ConvictionListDetailPage({ id }: { id: string }) {
         <ArrowLeft className="h-3 w-3" /> Back
       </Button>
 
+      {actionStatus && (
+        <Alert variant={actionStatus.variant === 'destructive' ? 'destructive' : 'default'}>
+            <AlertTitle>{actionStatus.variant === 'success' ? 'Success' : actionStatus.variant === 'destructive' ? 'Error' : 'Info'}</AlertTitle>
+            <AlertDescription>{actionStatus.message}</AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
             <CardTitle>{data.displayName}</CardTitle>
             <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleReviewAction('verified')}><CheckCircle className="h-4 w-4 mr-1"/> Verify</Button>
-                <Button variant="outline" size="sm" onClick={() => handleReviewAction('needs_review')}><AlertCircle className="h-4 w-4 mr-1"/> Needs Review</Button>
-                <Button variant="destructive" size="sm" onClick={() => handleReviewAction('rejected')}><XCircle className="h-4 w-4 mr-1"/> Reject</Button>
-                <Button variant="default" size="sm" onClick={handleSaveAsBasket}><Save className="h-4 w-4 mr-1"/> Save Basket</Button>
-                <Button variant="default" size="sm" onClick={handleAddToWatchlist}><PlusCircle className="h-4 w-4 mr-1"/> Watchlist</Button>
+                <Button variant="outline" size="sm" disabled={isActionRunning} onClick={() => handleReviewAction('verified')}><CheckCircle className="h-4 w-4 mr-1"/> Verify</Button>
+                <Button variant="outline" size="sm" disabled={isActionRunning} onClick={() => handleReviewAction('needs_review')}><AlertCircle className="h-4 w-4 mr-1"/> Needs Review</Button>
+                <Button variant="destructive" size="sm" disabled={isActionRunning} onClick={() => handleReviewAction('rejected')}><XCircle className="h-4 w-4 mr-1"/> Reject</Button>
+                <Button variant="default" size="sm" disabled={isActionRunning} onClick={handleSaveAsBasket}>{isActionRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin"/> : <Save className="h-4 w-4 mr-1"/>} Save Basket</Button>
+                <Button variant="default" size="sm" disabled={isActionRunning} onClick={handleAddToWatchlist}>{isActionRunning ? <Loader2 className="h-4 w-4 mr-1 animate-spin"/> : <PlusCircle className="h-4 w-4 mr-1"/>} Watchlist</Button>
             </div>
           </div>
         </CardHeader>
