@@ -7,12 +7,13 @@ export interface SaveResult {
   listId?: string
   errors: string[]
   warnings: string[]
+  status: 'created' | 'updated' | 'skipped'
 }
 
 export async function saveListCandidate(candidate: SellSideListCandidate): Promise<SaveResult> {
   const validation = validateListCandidate(candidate)
   if (!validation.valid) {
-    return { success: false, errors: validation.errors, warnings: validation.warnings }
+    return { success: false, errors: validation.errors, warnings: validation.warnings, status: 'skipped' }
   }
 
   const store = getStore()
@@ -20,7 +21,8 @@ export async function saveListCandidate(candidate: SellSideListCandidate): Promi
 
   const existing = await store.getConvictionList(slug)
   if (existing) {
-    return { success: true, listId: existing.id, errors: [], warnings: validation.warnings }
+    // TODO: Check if we need to update anything (members, etc.)
+    return { success: true, listId: existing.id, errors: [], warnings: validation.warnings, status: 'skipped' }
   }
 
   const validSourceTypes = ['official_page', 'official_pdf', 'media_summary', 'manual', 'csv', 'paste', 'api'] as const
@@ -57,13 +59,14 @@ export async function saveListCandidate(candidate: SellSideListCandidate): Promi
       ticker: member.ticker.toUpperCase(),
       companyName: member.companyName,
       rank: member.rank ?? index + 1,
+      weight: member.weight,
       action: member.action,
       note: member.note,
       sourceText: member.sourceText,
     })
   }
 
-  return { success: true, listId: list.id, errors: [], warnings: validation.warnings }
+  return { success: true, listId: list.id, errors: [], warnings: validation.warnings, status: 'created' }
 }
 
 function slugify(value: string): string {

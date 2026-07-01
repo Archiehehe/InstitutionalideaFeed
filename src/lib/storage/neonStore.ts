@@ -292,6 +292,10 @@ export function createNeonStore(): Store {
       const [query, params] = insertQuery('conviction_lists', input as Row)
       return one(query, params)
     },
+    async updateConvictionList(id, updates) {
+      const [query, params] = updateQuery('conviction_lists', id, updates as Row)
+      return maybeOne(query, params)
+    },
     async addConvictionListMember(input) {
       const existing = await maybeOne<ConvictionListMember>(
         'select * from conviction_list_members where conviction_list_id = $1 and ticker = upper($2)',

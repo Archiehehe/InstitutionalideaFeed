@@ -245,7 +245,7 @@ export interface ConvictionList {
   sourcePublisher?: string
   accessStatus?: string
   confidence: 'verified' | 'needs_review'
-  reviewStatus?: 'pending' | 'approved' | 'rejected' | 'needs_extraction'
+  reviewStatus?: 'pending' | 'approved' | 'rejected' | 'needs_extraction' | 'needs_review' | 'verified'
   rawSourceTitle?: string
   rawSourceExcerpt?: string
   importedFrom?: string
@@ -372,6 +372,7 @@ export interface Store {
   getConvictionList(id: string): Promise<ConvictionList | null>
   getConvictionListMembers(convictionListId: string): Promise<ConvictionListMember[]>
   createConvictionList(list: Omit<ConvictionList, 'id' | 'createdAt' | 'updatedAt'>): Promise<ConvictionList>
+  updateConvictionList(id: string, updates: Partial<Omit<ConvictionList, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ConvictionList | null>
   addConvictionListMember(member: Omit<ConvictionListMember, 'id' | 'createdAt'>): Promise<ConvictionListMember>
 
   // 13F Overlap

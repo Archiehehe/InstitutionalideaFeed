@@ -3,6 +3,7 @@ export type SellSideListMember = {
   companyName?: string
   action?: 'buy' | 'sell' | 'underperform' | 'addition' | 'removal' | 'unknown'
   rank?: number
+  weight?: number
   note?: string
   sourceText?: string
 }
@@ -21,7 +22,7 @@ export type SellSideListCandidate = {
   sourcePublisher?: string
   sourceType: 'official_page' | 'official_pdf' | 'media_summary' | 'manual' | 'csv' | 'paste'
   confidence: 'verified' | 'needs_review'
-  reviewStatus?: 'pending' | 'approved' | 'rejected'
+  reviewStatus?: 'pending' | 'approved' | 'rejected' | 'needs_extraction' | 'needs_review' | 'verified'
   rawSourceTitle?: string
   rawSourceExcerpt?: string
   importedFrom?: string
@@ -37,7 +38,7 @@ export type PartialCandidate = {
   sector?: string
   sourceType: 'media_summary' | 'manual'
   confidence: 'needs_review'
-  reviewStatus: 'needs_extraction'
+  reviewStatus: 'needs_extraction' | 'needs_review' | 'rejected' | 'verified'
   visibleTickers: string[]
   expectedCount?: number
   sourceUrl?: string

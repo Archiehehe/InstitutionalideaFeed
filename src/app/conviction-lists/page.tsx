@@ -14,7 +14,7 @@ import { LoadingState } from '@/components/LoadingState'
 import { TickerPill } from '@/components/TickerPill'
 import { ThirteenFOverlapPanel } from '@/components/ThirteenFOverlapPanel'
 import type { ConvictionListMember, ThirteenFOverlap } from '@/lib/storage/types'
-import { ExternalLink, Eye, FolderPlus, Plus, Search, ClipboardPaste, Database } from 'lucide-react'
+import { ExternalLink, Eye, FolderPlus, Plus, Search, ClipboardPaste, Database, CheckCircle2, XCircle, Clock } from 'lucide-react'
 
 interface ConvictionListData {
   id: string
@@ -29,8 +29,10 @@ interface ConvictionListData {
   region?: string
   sourceUrl?: string
   sourceType: string
+  sourcePublisher?: string
   accessStatus?: string
   confidence: 'verified' | 'needs_review'
+  reviewStatus?: string
   updatedAt: string
   members: ConvictionListMember[]
   tickers: string[]
@@ -70,6 +72,15 @@ interface QueryData {
   category: string
 }
 
+interface ImportResult {
+  created: number
+  updated: number
+  skipped: number
+  failed: number
+  total: number
+  failedItems: { institution: string; listName: string; errors: string[] }[]
+}
+
 export default function ConvictionListsPage() {
   const [data, setData] = useState<PageData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -78,7 +89,7 @@ export default function ConvictionListsPage() {
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
   const [queriesDialogOpen, setQueriesDialogOpen] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const [seedResult, setSeedResult] = useState<string | null>(null)
+  const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [pasteText, setPasteText] = useState('')
   const [parsedPaste, setParsedPaste] = useState<PasteParseResult | null>(null)
   const [queries, setQueries] = useState<QueryData[]>([])
@@ -96,10 +107,26 @@ export default function ConvictionListsPage() {
     tickers: '',
     notes: '',
   })
+  const [filters, setFilters] = useState({
+    search: '',
+    institution: '',
+    year: '',
+    theme: '',
+    sector: '',
+    reviewStatus: '',
+    confidence: '',
+    sourceType: '',
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
+  })
 
   const load = async () => {
     try {
-      const res = await fetch('/api/conviction-lists')
+      const params = new URLSearchParams()
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value)
+      })
+      const res = await fetch(`/api/conviction-lists?${params.toString()}`)
       if (!res.ok) throw new Error('Failed to load conviction lists')
       setData(await res.json())
     } catch (err) {
@@ -109,8 +136,8 @@ export default function ConvictionListsPage() {
     }
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load() }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  useEffect(() => { load() }, [filters])
 
   const saveBasket = async (list: ConvictionListData) => {
     await fetch('/api/baskets', {
@@ -156,18 +183,10 @@ export default function ConvictionListsPage() {
   }
 
   const handleImportSeed = async () => {
-    setSeedResult(null)
+    setImportResult(null)
     const res = await fetch('/api/conviction-lists/import-seed', { method: 'POST' })
     const result = await res.json()
-    const failedItems = result.results?.filter((r: { success: boolean }) => !r.success) ?? []
-    if (failedItems.length > 0) {
-      const details = failedItems.map((r: { institution: string; listName: string; errors: string[] }) =>
-        `${r.institution} ${r.listName}: ${r.errors.join('; ')}`
-      ).join('\n')
-      setSeedResult(`Imported: ${result.imported}, Failed: ${result.failed}\n${details}`)
-    } else {
-      setSeedResult(`Imported ${result.imported} lists successfully.`)
-    }
+    setImportResult(result)
     await load()
   }
 
@@ -212,10 +231,43 @@ export default function ConvictionListsPage() {
     setQueriesDialogOpen(true)
   }
 
+  const handleReviewAction = async (listId: string, action: 'verified' | 'needs_review' | 'rejected') => {
+    try {
+      const updates: Partial<{ confidence: 'verified' | 'needs_review'; reviewStatus: 'verified' | 'needs_review' | 'rejected' }> = {}
+      if (action === 'verified') {
+        updates.confidence = 'verified'
+        updates.reviewStatus = 'verified'
+      } else if (action === 'needs_review') {
+        updates.confidence = 'needs_review'
+        updates.reviewStatus = 'needs_review'
+      } else if (action === 'rejected') {
+        updates.reviewStatus = 'rejected'
+      }
+
+      const res = await fetch(`/api/conviction-lists/${listId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      })
+
+      if (res.ok) {
+        await load()
+      }
+    } catch (err) {
+      console.error('Failed to update review status:', err)
+    }
+  }
+
   if (error) return <ErrorState message={error} />
   if (loading || !data) return <LoadingState />
 
   const { lists, diagnostics } = data
+
+  // Get unique values for filter options
+  const institutions = Array.from(new Set(data.lists.map((l) => l.institution))).sort()
+  const years = Array.from(new Set(data.lists.map((l) => l.year).filter((y): y is number => y !== undefined))).sort((a, b) => b - a)
+  const themes = Array.from(new Set(data.lists.map((l) => l.theme).filter((t): t is string => t !== undefined))).sort()
+  const sectors = Array.from(new Set(data.lists.map((l) => l.sector).filter((s): s is string => s !== undefined))).sort()
 
   return (
     <div className="space-y-5">
@@ -226,7 +278,7 @@ export default function ConvictionListsPage() {
             <Search className="h-3 w-3" /> Search Queries
           </Button>
           <Button variant="outline" size="sm" className="gap-1" onClick={handleImportSeed}>
-            <Database className="h-3 w-3" /> Import Starter Lists
+            <Database className="h-3 w-3" /> Import Starter Lists ({diagnostics.seedAvailable})
           </Button>
           <Dialog open={pasteDialogOpen} onOpenChange={setPasteDialogOpen}>
             <DialogTrigger>
@@ -296,20 +348,141 @@ export default function ConvictionListsPage() {
         </div>
       </div>
 
-      {seedResult && (
-        <div className="rounded-md border border-green-700 bg-green-900/20 px-3 py-2 text-xs text-green-400 whitespace-pre-wrap">
-          {seedResult}
+      {/* Import Result */}
+      {importResult && (
+        <div className="rounded-md border border-[#1F1F1F] bg-[#0A0A0A] p-4">
+          <h3 className="text-sm font-medium mb-2">Import Results</h3>
+          <div className="grid grid-cols-4 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-400">{importResult.created}</div>
+              <div className="text-xs text-muted-foreground">Created</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-400">{importResult.updated}</div>
+              <div className="text-xs text-muted-foreground">Updated</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-400">{importResult.skipped}</div>
+              <div className="text-xs text-muted-foreground">Skipped</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-400">{importResult.failed}</div>
+              <div className="text-xs text-muted-foreground">Failed</div>
+            </div>
+          </div>
+          {importResult.failedItems.length > 0 && (
+            <details>
+              <summary className="text-xs cursor-pointer">View failed items</summary>
+              <div className="mt-2 space-y-2 text-xs">
+                {importResult.failedItems.map((item, i) => (
+                  <div key={i} className="rounded border border-red-800 bg-red-900/20 p-2">
+                    <div className="font-medium">{item.institution} - {item.listName}</div>
+                    <div className="text-red-400">{item.errors.join(', ')}</div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
         </div>
       )}
 
+      {/* Filters */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 p-4 rounded-md border border-[#1F1F1F] bg-[#0A0A0A]">
+        <div className="col-span-2 md:col-span-4 lg:col-span-6">
+          <Input
+            placeholder="Search lists..."
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            className="h-9 text-xs"
+          />
+        </div>
+        <Select value={filters.institution || ''} onValueChange={(v) => setFilters({ ...filters, institution: v || '' })}>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Institution" /></SelectTrigger>
+          <SelectContent>
+            {institutions.map((inst) => (
+              <SelectItem key={inst} value={inst}>{inst}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filters.year || ''} onValueChange={(v) => setFilters({ ...filters, year: v || '' })}>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Year" /></SelectTrigger>
+          <SelectContent>
+            {years.map((year) => (
+              <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filters.theme || ''} onValueChange={(v) => setFilters({ ...filters, theme: v || '' })}>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Theme" /></SelectTrigger>
+          <SelectContent>
+            {themes.map((theme) => (
+              <SelectItem key={theme} value={theme}>{theme}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filters.sector || ''} onValueChange={(v) => setFilters({ ...filters, sector: v || '' })}>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Sector" /></SelectTrigger>
+          <SelectContent>
+            {sectors.map((sector) => (
+              <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filters.reviewStatus || ''} onValueChange={(v) => setFilters({ ...filters, reviewStatus: v || '' })}>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Review Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="needs_review">Needs Review</SelectItem>
+            <SelectItem value="verified">Verified</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="needs_extraction">Needs Extraction</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filters.confidence || ''} onValueChange={(v) => setFilters({ ...filters, confidence: v || '' })}>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Confidence" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="verified">Verified</SelectItem>
+            <SelectItem value="needs_review">Needs Review</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filters.sourceType || ''} onValueChange={(v) => setFilters({ ...filters, sourceType: v || '' })}>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Source Type" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="official_page">Official Page</SelectItem>
+            <SelectItem value="official_pdf">Official PDF</SelectItem>
+            <SelectItem value="media_summary">Media Summary</SelectItem>
+            <SelectItem value="manual">Manual</SelectItem>
+            <SelectItem value="csv">CSV</SelectItem>
+            <SelectItem value="paste">Paste</SelectItem>
+            <SelectItem value="api">API</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filters.sortBy || 'updatedAt'} onValueChange={(v) => setFilters({ ...filters, sortBy: v || 'updatedAt' })}>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Sort By" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="updatedAt">Updated At</SelectItem>
+            <SelectItem value="createdAt">Created At</SelectItem>
+            <SelectItem value="institution">Institution</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filters.sortOrder || 'desc'} onValueChange={(v) => setFilters({ ...filters, sortOrder: v || 'desc' })}>
+          <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Sort Order" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="desc">Descending</SelectItem>
+            <SelectItem value="asc">Ascending</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Summary Cells */}
       <div className="grid gap-2 md:grid-cols-5">
         <SummaryCell label="Imported lists" value={String(diagnostics.totalLists)} />
         <SummaryCell label="Verified" value={String(diagnostics.verified)} />
-        <SummaryCell label="Needs review" value={String(diagnostics.needsReview)} />
-        <SummaryCell label="Seed available" value={String(diagnostics.seedAvailable)} />
-        <SummaryCell label="Partial candidates" value={String(diagnostics.partialCandidates)} />
+        <SummaryCell label="Needs Review" value={String(diagnostics.needsReview)} />
+        <SummaryCell label="Seed Available" value={String(diagnostics.seedAvailable)} />
+        <SummaryCell label="Partial Candidates" value={String(diagnostics.partialCandidates)} />
       </div>
 
+      {/* Lists */}
       {lists.length === 0 ? (
         <EmptyState
           title="No conviction lists imported yet."
@@ -321,26 +494,12 @@ export default function ConvictionListsPage() {
           ]}
         />
       ) : (
-        <>
-          {lists.filter((l) => l.confidence === 'verified').length > 0 && (
-            <div>
-              <h2 className="mb-2 text-sm font-semibold text-green-400">Verified Lists</h2>
-              <div className="grid gap-3 xl:grid-cols-2">
-                {lists.filter((l) => l.confidence === 'verified').map((list) => renderListCard(list))}
-              </div>
-            </div>
-          )}
-          {lists.filter((l) => l.confidence === 'needs_review').length > 0 && (
-            <div>
-              <h2 className="mb-2 text-sm font-semibold text-yellow-400">Needs Review</h2>
-              <div className="grid gap-3 xl:grid-cols-2">
-                {lists.filter((l) => l.confidence === 'needs_review').map((list) => renderListCard(list, true))}
-              </div>
-            </div>
-          )}
-        </>
+        <div className="grid gap-3 xl:grid-cols-2">
+          {lists.map((list) => renderListCard(list, handleReviewAction))}
+        </div>
       )}
 
+      {/* Search Queries Dialog */}
       <Dialog open={queriesDialogOpen} onOpenChange={setQueriesDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Sell-Side List Finder Queries</DialogTitle></DialogHeader>
@@ -376,7 +535,7 @@ export default function ConvictionListsPage() {
     </div>
   )
 
-  function renderListCard(list: ConvictionListData, _showReviewActions?: boolean) {
+  function renderListCard(list: ConvictionListData, onReviewAction: (id: string, action: 'verified' | 'needs_review' | 'rejected') => Promise<void>) {
     return (
       <Card key={list.id} className="border border-[#1F1F1F] bg-[#0A0A0A]">
         <CardContent className="space-y-3 p-4">
@@ -387,6 +546,9 @@ export default function ConvictionListsPage() {
             </div>
             <div className="flex flex-wrap justify-end gap-1">
               <Badge variant="outline" className="text-xs capitalize">{list.confidence.replace('_', ' ')}</Badge>
+              {list.reviewStatus && (
+                <Badge variant="outline" className="text-xs capitalize">{list.reviewStatus.replace('_', ' ')}</Badge>
+              )}
               <Badge variant="secondary" className="text-xs">{list.tickerCount} tickers</Badge>
             </div>
           </div>
@@ -398,6 +560,7 @@ export default function ConvictionListsPage() {
             {list.sector && <span>Sector: {list.sector}</span>}
             {list.region && <span>Region: {list.region}</span>}
             {list.sourceType && <span>Source: {list.sourceType.replace('_', ' ')}</span>}
+            {list.sourcePublisher && <span>Publisher: {list.sourcePublisher}</span>}
             <span>Updated: {new Date(list.updatedAt).toLocaleDateString()}</span>
           </div>
 
@@ -409,20 +572,32 @@ export default function ConvictionListsPage() {
 
           <ThirteenFOverlapPanel overlaps={list.overlaps} />
 
-          <div className="flex flex-wrap gap-1 border-t border-[#1F1F1F] pt-2">
-            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => saveBasket(list)}>
-              <FolderPlus className="h-3 w-3" /> Save as basket
+          {/* Review Actions */}
+          <div className="flex flex-wrap gap-2 border-t border-[#1F1F1F] pt-2">
+            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => onReviewAction(list.id, 'verified')}>
+              <CheckCircle2 className="h-3 w-3" /> Mark Verified
             </Button>
-            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => addAllToWatchlist(list)}>
-              <Eye className="h-3 w-3" /> Add all to watchlist
+            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => onReviewAction(list.id, 'needs_review')}>
+              <Clock className="h-3 w-3" /> Keep Needs Review
             </Button>
-            {list.sourceUrl && (
-              <a href={list.sourceUrl} target="_blank" rel="noopener noreferrer" className="ml-auto">
-                <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
-                  <ExternalLink className="h-3 w-3" /> Open source
-                </Button>
-              </a>
-            )}
+            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => onReviewAction(list.id, 'rejected')}>
+              <XCircle className="h-3 w-3" /> Reject
+            </Button>
+            <div className="ml-auto flex gap-2">
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => saveBasket(list)}>
+                <FolderPlus className="h-3 w-3" /> Save as basket
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => addAllToWatchlist(list)}>
+                <Eye className="h-3 w-3" /> Add all to watchlist
+              </Button>
+              {list.sourceUrl && (
+                <a href={list.sourceUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                    <ExternalLink className="h-3 w-3" /> Open source
+                  </Button>
+                </a>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

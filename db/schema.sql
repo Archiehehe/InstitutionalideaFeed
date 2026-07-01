@@ -355,7 +355,7 @@ begin
   ) then
     alter table conviction_lists
       add constraint conviction_lists_review_status_check
-      check (review_status is null or review_status in ('pending', 'approved', 'rejected', 'needs_extraction'));
+      check (review_status is null or review_status in ('pending', 'approved', 'rejected', 'needs_extraction', 'needs_review', 'verified'));
   end if;
 end $$;
 

@@ -317,6 +317,14 @@ export function createJsonStore(): Store {
       await writeCollection('conviction_lists', items)
       return item
     },
+    async updateConvictionList(id, updates) {
+      const items = await readCollection<ConvictionList>('conviction_lists')
+      const idx = items.findIndex(list => list.id === id)
+      if (idx === -1) return null
+      items[idx] = { ...items[idx], ...stripUndefined(updates as Record<string, unknown>), updatedAt: now() }
+      await writeCollection('conviction_lists', items)
+      return items[idx]
+    },
     async addConvictionListMember(data) {
       const items = await readCollection<ConvictionListMember>('conviction_list_members')
       const existing = items.find(member => (
