@@ -245,7 +245,7 @@ export interface ConvictionList {
   sourcePublisher?: string
   accessStatus?: string
   confidence: 'verified' | 'needs_review'
-  reviewStatus?: 'pending' | 'approved' | 'rejected' | 'needs_extraction' | 'needs_review' | 'verified'
+  reviewStatus?: 'needs_review' | 'verified' | 'rejected'
   rawSourceTitle?: string
   rawSourceExcerpt?: string
   importedFrom?: string

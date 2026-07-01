@@ -436,7 +436,6 @@ export default function ConvictionListsPage() {
             <SelectItem value="needs_review">Needs Review</SelectItem>
             <SelectItem value="verified">Verified</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="needs_extraction">Needs Extraction</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filters.confidence || ''} onValueChange={(v) => setFilters({ ...filters, confidence: v || '' })}>

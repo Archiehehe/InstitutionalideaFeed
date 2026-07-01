@@ -22,7 +22,7 @@ export type SellSideListCandidate = {
   sourcePublisher?: string
   sourceType: 'official_page' | 'official_pdf' | 'media_summary' | 'manual' | 'csv' | 'paste'
   confidence: 'verified' | 'needs_review'
-  reviewStatus?: 'pending' | 'approved' | 'rejected' | 'needs_extraction' | 'needs_review' | 'verified'
+  reviewStatus?: 'rejected' | 'verified' | 'needs_review'
   rawSourceTitle?: string
   rawSourceExcerpt?: string
   importedFrom?: string

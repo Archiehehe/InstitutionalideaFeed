@@ -45,7 +45,7 @@ export async function saveListCandidate(candidate: SellSideListCandidate): Promi
     sourcePublisher: candidate.sourcePublisher,
     accessStatus: 'public',
     confidence: candidate.confidence,
-    reviewStatus: candidate.reviewStatus,
+    reviewStatus: (['needs_review', 'verified', 'rejected'].includes(candidate.reviewStatus as 'needs_review' | 'verified' | 'rejected') ? candidate.reviewStatus : 'needs_review') as 'needs_review' | 'verified' | 'rejected',
     rawSourceTitle: candidate.rawSourceTitle,
     rawSourceExcerpt: candidate.rawSourceExcerpt,
     importedFrom: candidate.importedFrom,

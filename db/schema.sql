@@ -326,11 +326,30 @@ create table if not exists conviction_lists (
 alter table conviction_lists alter column id set default gen_random_uuid();
 
 alter table conviction_lists add column if not exists source_publisher text;
-alter table conviction_lists add column if not exists review_status text;
+alter table conviction_lists add column if not exists review_status text default 'needs_review';
 alter table conviction_lists add column if not exists raw_source_title text;
 alter table conviction_lists add column if not exists raw_source_excerpt text;
 alter table conviction_lists add column if not exists imported_from text;
 alter table conviction_lists add column if not exists published_at timestamptz;
+
+do $$
+begin
+  -- Update constraint to only allow needs_review, verified, rejected
+  if exists (
+    select 1 from pg_constraint where conname = 'conviction_lists_review_status_check'
+  ) then
+    alter table conviction_lists drop constraint conviction_lists_review_status_check;
+  end if;
+
+  alter table conviction_lists
+    add constraint conviction_lists_review_status_check
+    check (review_status in ('needs_review', 'verified', 'rejected'));
+end $$;
+
+-- Ensure we only have valid review_status values
+update conviction_lists
+set review_status = 'needs_review'
+where review_status not in ('needs_review', 'verified', 'rejected') or review_status is null;
 
 do $$
 begin
@@ -348,14 +367,6 @@ begin
     alter table conviction_lists
       add constraint conviction_lists_confidence_check
       check (confidence in ('verified', 'needs_review'));
-  end if;
-
-  if not exists (
-    select 1 from pg_constraint where conname = 'conviction_lists_review_status_check'
-  ) then
-    alter table conviction_lists
-      add constraint conviction_lists_review_status_check
-      check (review_status is null or review_status in ('pending', 'approved', 'rejected', 'needs_extraction', 'needs_review', 'verified'));
   end if;
 end $$;
 
