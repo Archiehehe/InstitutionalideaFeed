@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "db:migrate": "node scripts/db-migrate.mjs",
+    "db:seed": "npm run db:sync:sources",
+    "db:setup": "npm run db:migrate && npm run db:seed",
     "db:sync:sources": "node scripts/db-sync-sources.mjs",
     "db:audit": "node scripts/audit-wallstreetscout-db.mjs",
     "db:doctor": "npm run db:sync:sources && npm run db:audit",

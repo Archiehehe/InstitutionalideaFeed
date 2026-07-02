@@ -1,51 +1,63 @@
-import { readdir, readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { neon } from '@neondatabase/serverless'
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { neon } from "@neondatabase/serverless";
+import { getDatabaseUrl } from "../src/lib/storage/env.js";
 
-const databaseUrl = process.env.DATABASE_URL || process.env.STORAGE_URL
+const databaseUrl = getDatabaseUrl();
 
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL must be set. STORAGE_URL is only used as a fallback.')
+  throw new Error(
+    "DATABASE_URL must be set. STORAGE_URL is only used as a fallback.",
+  );
 }
 
-const sql = neon(databaseUrl)
-const sourceDir = new URL('../src/lib/source-registry/sources/', import.meta.url)
+const sql = neon(databaseUrl);
+const sourceDir = new URL(
+  "../src/lib/source-registry/sources/",
+  import.meta.url,
+);
 const files = (await readdir(sourceDir))
-  .filter((file) => file.endsWith('.json'))
-  .sort()
+  .filter((file) => file.endsWith(".json"))
+  .sort();
 const sources = await Promise.all(
-  files.map(async (file) => JSON.parse(await readFile(new URL(path.basename(file), sourceDir), 'utf8'))),
-)
+  files.map(async (file) =>
+    JSON.parse(await readFile(new URL(path.basename(file), sourceDir), "utf8")),
+  ),
+);
 
 const CORE_DOMAINS = new Set([
-  'morganstanley.com',
-  'goldmansachs.com',
-  'privatebank.jpmorgan.com',
-  'ubs.com',
-  'privatebank.bankofamerica.com',
-  'schwab.com',
-  'fidelity.com',
-  'troweprice.com',
-  'capitalgroup.com',
-  'wellington.com',
-  'blackrock.com',
-  'franklintempleton.com',
-])
+  "morganstanley.com",
+  "goldmansachs.com",
+  "privatebank.jpmorgan.com",
+  "ubs.com",
+  "privatebank.bankofamerica.com",
+  "schwab.com",
+  "fidelity.com",
+  "troweprice.com",
+  "capitalgroup.com",
+  "wellington.com",
+  "blackrock.com",
+  "franklintempleton.com",
+]);
 
-const syncedDomains = new Set()
-const coreDomainsSynced = new Set()
+const syncedDomains = new Set();
+const coreDomainsSynced = new Set();
 for (const source of sources) {
-  const domainLower = source.domain.toLowerCase()
+  const domainLower = source.domain.toLowerCase();
 
-  const isCore = CORE_DOMAINS.has(domainLower)
-  const tier = isCore ? 'core' : 'secondary'
-  const shouldBeEnabled = isCore && (source.enabled !== false)
-  const sourceClass = ['primary_institutional', 'public_institutional_research', 'manual'].includes(source.sourceClass)
+  const isCore = CORE_DOMAINS.has(domainLower);
+  const tier = isCore ? "core" : "secondary";
+  const shouldBeEnabled = isCore && source.enabled !== false;
+  const sourceClass = [
+    "primary_institutional",
+    "public_institutional_research",
+    "manual",
+  ].includes(source.sourceClass)
     ? source.sourceClass
-    : 'primary_institutional'
+    : "primary_institutional";
 
-  syncedDomains.add(domainLower)
-  if (isCore) coreDomainsSynced.add(domainLower)
+  syncedDomains.add(domainLower);
+  if (isCore) coreDomainsSynced.add(domainLower);
 
   await sql`
     insert into sources (
@@ -77,12 +89,12 @@ for (const source of sources) {
     values (
       ${source.name},
       ${domainLower},
-      ${source.sourceType ?? 'primary'},
+      ${source.sourceType ?? "primary"},
       ${sourceClass},
       ${tier},
       ${source.rssUrl ?? null},
       ${source.sitemapUrl ?? null},
-      ${source.parserType ?? 'generic'},
+      ${source.parserType ?? "generic"},
       ${source.parserKey ?? null},
       ${source.requiresDedicatedParser ?? false},
       ${shouldBeEnabled},
@@ -125,7 +137,7 @@ for (const source of sources) {
       quality_score = excluded.quality_score,
       notes = excluded.notes,
       updated_at = now()
-  `
+  `;
 }
 
 await sql`
@@ -135,45 +147,62 @@ await sql`
       source_tier = 'secondary',
       updated_at = now()
   where lower(domain) <> all(${Array.from(CORE_DOMAINS)})
-`
+`;
 
 const [coreEnabled] = await sql`
   select count(*)::int as count
   from sources
   where enabled = true and source_tier = 'core'
-`
+`;
 const duplicateRows = await sql`
   select lower(domain) as domain, count(*)::int as count
   from sources
   group by lower(domain)
   having count(*) > 1
-`
+`;
 const coreRows = await sql`
   select name, domain, enabled, parser_key, parser_type
   from sources
   where lower(domain) = any(${Array.from(CORE_DOMAINS)})
   order by name
-`
-const enabledCoreDomains = new Set(coreRows.filter((row) => row.enabled).map((row) => String(row.domain).toLowerCase()))
-const missingCoreDomains = Array.from(CORE_DOMAINS).filter((domain) => !enabledCoreDomains.has(domain))
-const enabledWithoutParser = coreRows.filter((row) => row.enabled && !row.parser_key && row.parser_type !== 'dedicated')
+`;
+const enabledCoreDomains = new Set(
+  coreRows
+    .filter((row) => row.enabled)
+    .map((row) => String(row.domain).toLowerCase()),
+);
+const missingCoreDomains = Array.from(CORE_DOMAINS).filter(
+  (domain) => !enabledCoreDomains.has(domain),
+);
+const enabledWithoutParser = coreRows.filter(
+  (row) => row.enabled && !row.parser_key && row.parser_type !== "dedicated",
+);
 
-console.log(`Synced ${syncedDomains.size} institutional source domains (${coreDomainsSynced.size} core registry domains).`)
-console.log(`Expected default-enabled sources: ${CORE_DOMAINS.size}`)
-console.log(`Actual core enabled sources: ${Number(coreEnabled.count)}`)
-console.log(`Duplicate domains: ${duplicateRows.length}`)
+console.log(
+  `Synced ${syncedDomains.size} institutional source domains (${coreDomainsSynced.size} core registry domains).`,
+);
+console.log(`Expected default-enabled sources: ${CORE_DOMAINS.size}`);
+console.log(`Actual core enabled sources: ${Number(coreEnabled.count)}`);
+console.log(`Duplicate domains: ${duplicateRows.length}`);
 
 if (missingCoreDomains.length > 0) {
-  console.log(`Missing/disabled core domains: ${missingCoreDomains.join(', ')}`)
+  console.log(
+    `Missing/disabled core domains: ${missingCoreDomains.join(", ")}`,
+  );
 }
 
 if (enabledWithoutParser.length > 0) {
-  console.log(`WARNING: Enabled sources without dedicated parser:`)
+  console.log(`WARNING: Enabled sources without dedicated parser:`);
   for (const row of enabledWithoutParser) {
-    console.log(`  - ${row.name} (${row.domain}) parser_type=${row.parser_type} parser_key=${row.parser_key ?? 'null'}`)
+    console.log(
+      `  - ${row.name} (${row.domain}) parser_type=${row.parser_type} parser_key=${row.parser_key ?? "null"}`,
+    );
   }
 }
 
-if (Number(coreEnabled.count) !== CORE_DOMAINS.size || duplicateRows.length > 0) {
-  process.exitCode = 1
+if (
+  Number(coreEnabled.count) !== CORE_DOMAINS.size ||
+  duplicateRows.length > 0
+) {
+  process.exitCode = 1;
 }

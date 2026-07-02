@@ -1,102 +1,148 @@
-'use client'
+"use client";
 
-import { useEffect, useState, useCallback } from 'react'
-import { ArticleCard } from '@/components/ArticleCard'
-import { FilterBar } from '@/components/FilterBar'
-import { EmptyState } from '@/components/EmptyState'
-import { LoadingState } from '@/components/LoadingState'
-import { ErrorState } from '@/components/ErrorState'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { getSnapJudgementUrl } from '@/lib/integrations/snapJudgement'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useEffect, useState, useCallback } from "react";
+import { ArticleCard } from "@/components/ArticleCard";
+import { FilterBar } from "@/components/FilterBar";
+import { EmptyState } from "@/components/EmptyState";
+import { LoadingState } from "@/components/LoadingState";
+import { ErrorState } from "@/components/ErrorState";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getSnapJudgementUrl } from "@/lib/integrations/snapJudgement";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ArticleData {
-  id: string
-  title: string
-  url?: string
-  sourceName: string
-  sourceType: string
-  sourceClass?: string
-  sourceTier?: string
-  firm?: string
-  publishedAt: string
-  theme?: string
-  sector?: string
-  pageType?: string
-  tickers: string[]
-  score: number
-  reasonShown?: string
+  id: string;
+  title: string;
+  url?: string;
+  sourceName: string;
+  sourceType: string;
+  sourceClass?: string;
+  sourceTier?: string;
+  firm?: string;
+  publishedAt: string;
+  theme?: string;
+  sector?: string;
+  pageType?: string;
+  tickers: string[];
+  score: number;
+  reasonShown?: string;
 }
 
-type FeedWindow = '7d' | '30d' | '90d' | 'all'
+type FeedWindow = "7d" | "30d" | "90d" | "all";
 
 const WINDOW_LABELS: Record<FeedWindow, string> = {
-  '7d': 'Last 7 days',
-  '30d': 'Last 30 days',
-  '90d': 'Last 90 days',
-  all: 'All eligible',
-}
+  "7d": "Last 7 days",
+  "30d": "Last 30 days",
+  "90d": "Last 90 days",
+  all: "All eligible",
+};
 
 export function FeedPage() {
-  const [articles, setArticles] = useState<ArticleData[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [firmFilter, setFirmFilter] = useState('')
-  const [sectorFilter, setSectorFilter] = useState('')
-  const [sourceTierFilter, setSourceTierFilter] = useState('')
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const requestedWindow = searchParams.get('window')
-  const windowFilter: FeedWindow = requestedWindow === '7d' || requestedWindow === '90d' || requestedWindow === 'all'
-    ? requestedWindow
-    : '30d'
+  const [articles, setArticles] = useState<ArticleData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [firmFilter, setFirmFilter] = useState("");
+  const [sectorFilter, setSectorFilter] = useState("");
+  const [sourceTierFilter, setSourceTierFilter] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedWindow = searchParams.get("window");
+  const windowFilter: FeedWindow =
+    requestedWindow === "7d" ||
+    requestedWindow === "90d" ||
+    requestedWindow === "all"
+      ? requestedWindow
+      : "30d";
 
   const fetchArticles = useCallback(async () => {
     try {
-      setLoading(true)
-      const params = new URLSearchParams()
-      if (search) params.set('search', search)
-      if (firmFilter) params.set('firm', firmFilter)
-      if (sectorFilter) params.set('sector', sectorFilter)
-      if (sourceTierFilter) params.set('sourceTier', sourceTierFilter)
-      params.set('window', windowFilter)
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (firmFilter) params.set("firm", firmFilter);
+      if (sectorFilter) params.set("sector", sectorFilter);
+      if (sourceTierFilter) params.set("sourceTier", sourceTierFilter);
+      params.set("window", windowFilter);
 
-      const res = await fetch(`/api/articles?${params}`)
-      if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      setArticles(Array.isArray(data) ? data : data.articles)
+      if (!res.ok) {
+        const data = await res.json();
+        if (data.error === "setup_required") {
+          setError(data.message);
+          return;
+        }
+        throw new Error(data.error || "Failed to fetch");
+      }
+      const data = await res.json();
+      setArticles(Array.isArray(data) ? data : data.articles);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load feed')
+      setError(err instanceof Error ? err.message : "Failed to load feed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [search, firmFilter, sectorFilter, sourceTierFilter, windowFilter])
+  }, [search, firmFilter, sectorFilter, sourceTierFilter, windowFilter]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchArticles() }, [fetchArticles])
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
 
-  const uniqueFirms = [...new Set(articles.map(a => a.firm).filter(Boolean) as string[])]
-  const realSectorNames = new Set(['Communication Services', 'Consumer Discretionary', 'Consumer Staples', 'Energy', 'Financials', 'Health Care', 'Industrials', 'Information Technology', 'Materials', 'Real Estate', 'Utilities'])
-  const uniqueSectors = [...new Set(articles.map(a => a.sector).filter((sector): sector is string => Boolean(sector) && realSectorNames.has(sector as string)))]
+  const uniqueFirms = [
+    ...new Set(articles.map((a) => a.firm).filter(Boolean) as string[]),
+  ];
+  const realSectorNames = new Set([
+    "Communication Services",
+    "Consumer Discretionary",
+    "Consumer Staples",
+    "Energy",
+    "Financials",
+    "Health Care",
+    "Industrials",
+    "Information Technology",
+    "Materials",
+    "Real Estate",
+    "Utilities",
+  ]);
+  const uniqueSectors = [
+    ...new Set(
+      articles
+        .map((a) => a.sector)
+        .filter(
+          (sector): sector is string =>
+            Boolean(sector) && realSectorNames.has(sector as string),
+        ),
+    ),
+  ];
 
   const handleFeedback = async (articleId: string, action: string) => {
-    await fetch('/api/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ articleId, action }),
-    })
-  }
+    });
+  };
 
   const handleAnalyze = (article: ArticleData) => {
-    window.open(getSnapJudgementUrl(article.tickers), '_blank', 'noopener,noreferrer')
-  }
+    window.open(
+      getSnapJudgementUrl(article.tickers),
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
 
   const handleSaveBasket = async (article: ArticleData) => {
-    const name = [article.firm, article.theme, 'Basket'].filter(Boolean).join(' ') || `Basket from ${article.title.slice(0, 40)}`
-    await fetch('/api/baskets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const name =
+      [article.firm, article.theme, "Basket"].filter(Boolean).join(" ") ||
+      `Basket from ${article.title.slice(0, 40)}`;
+    await fetch("/api/baskets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
         articleId: article.id,
@@ -105,19 +151,20 @@ export function FeedPage() {
         sector: article.sector,
         tickers: article.tickers,
       }),
-    })
-    handleFeedback(article.id, 'save_basket')
-  }
+    });
+    handleFeedback(article.id, "save_basket");
+  };
 
   const handleWindowChange = (value: string | null) => {
-    const nextWindow: FeedWindow = value === '7d' || value === '90d' || value === 'all' ? value : '30d'
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('window', nextWindow)
-    router.replace(`/feed?${params.toString()}`)
-  }
+    const nextWindow: FeedWindow =
+      value === "7d" || value === "90d" || value === "all" ? value : "30d";
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("window", nextWindow);
+    router.replace(`/feed?${params.toString()}`);
+  };
 
-  if (error) return <ErrorState message={error} />
-  if (loading) return <LoadingState />
+  if (error) return <ErrorState message={error} />;
+  if (loading) return <LoadingState />;
 
   return (
     <div>
@@ -138,7 +185,12 @@ export function FeedPage() {
         />
         <div className="mb-4 flex items-center gap-2">
           <span className="text-xs text-[#9CA3AF]">Tier</span>
-          <Select value={sourceTierFilter || 'all'} onValueChange={(value) => setSourceTierFilter(!value || value === 'all' ? '' : value)}>
+          <Select
+            value={sourceTierFilter || "all"}
+            onValueChange={(value) =>
+              setSourceTierFilter(!value || value === "all" ? "" : value)
+            }
+          >
             <SelectTrigger className="h-9 w-[130px] border-[#1F1F1F] bg-[#0A0A0A] text-xs text-[#D1D5DB]">
               <SelectValue placeholder="All tiers" />
             </SelectTrigger>
@@ -167,7 +219,12 @@ export function FeedPage() {
       </div>
 
       <p className="mb-4 text-xs text-[#6B7280]">
-        {articles.length} result{articles.length === 1 ? '' : 's'} - Showing qualified institutional research {windowFilter === 'all' ? 'from all eligible dates' : `from the ${WINDOW_LABELS[windowFilter].toLowerCase()}`}.
+        {articles.length} result{articles.length === 1 ? "" : "s"} - Showing
+        qualified institutional research{" "}
+        {windowFilter === "all"
+          ? "from all eligible dates"
+          : `from the ${WINDOW_LABELS[windowFilter].toLowerCase()}`}
+        .
       </p>
 
       {articles.length === 0 ? (
@@ -175,11 +232,21 @@ export function FeedPage() {
           title="No qualified institutional research in this window"
           description="Institutional research articles must pass source, content, and research-quality checks to appear in the feed."
           actions={[
-            ...(windowFilter !== '90d' && windowFilter !== 'all'
-              ? [{ label: 'Show 90 days', onClick: () => handleWindowChange('90d') }]
+            ...(windowFilter !== "90d" && windowFilter !== "all"
+              ? [
+                  {
+                    label: "Show 90 days",
+                    onClick: () => handleWindowChange("90d"),
+                  },
+                ]
               : []),
-            ...(windowFilter !== 'all'
-              ? [{ label: 'Show all eligible', onClick: () => handleWindowChange('all') }]
+            ...(windowFilter !== "all"
+              ? [
+                  {
+                    label: "Show all eligible",
+                    onClick: () => handleWindowChange("all"),
+                  },
+                ]
               : []),
           ]}
         />
@@ -206,23 +273,21 @@ export function FeedPage() {
               onRunMetrics={() => router.push(`/article/${a.id}`)}
               onAddAllToWatchlist={async () => {
                 for (const t of a.tickers) {
-                  await fetch('/api/watchlist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                  await fetch("/api/watchlist", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ ticker: t }),
-                  })
+                  });
                 }
               }}
               onAnalyze={() => handleAnalyze(a)}
-              onMoreLikeThis={() => handleFeedback(a.id, 'more_like_this')}
-              onLessLikeThis={() => handleFeedback(a.id, 'less_like_this')}
-              onHideSource={() => handleFeedback(a.id, 'hide_source')}
+              onMoreLikeThis={() => handleFeedback(a.id, "more_like_this")}
+              onLessLikeThis={() => handleFeedback(a.id, "less_like_this")}
+              onHideSource={() => handleFeedback(a.id, "hide_source")}
             />
           ))}
         </div>
       )}
     </div>
-  )
+  );
 }
-
-
