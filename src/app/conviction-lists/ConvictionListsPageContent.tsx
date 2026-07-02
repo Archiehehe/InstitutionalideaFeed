@@ -292,6 +292,11 @@ export function ConvictionListsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Conviction Lists</h1>
         <div className="flex gap-2">
+          <Link href="/conviction-lists/overlap">
+            <Button variant="outline" size="sm" className="gap-1">
+              <Eye className="h-3 w-3" /> Overlap View
+            </Button>
+          </Link>
           <Link href="/sell-side-list-finder">
             <Button variant="outline" size="sm" className="gap-1">
               <Search className="h-3 w-3" /> Find Lists
