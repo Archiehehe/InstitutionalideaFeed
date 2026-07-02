@@ -1,14 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { neon } from "@neondatabase/serverless";
-import { getDirectDatabaseUrl } from "../src/lib/storage/env.js";
+import { getDirectDatabaseUrl, sanitizeUrl } from "./db-env.mjs";
 
 const databaseUrl = getDirectDatabaseUrl();
 
-if (!databaseUrl) {
-  throw new Error(
-    "DATABASE_URL must be set. STORAGE_URL is only used as a fallback.",
-  );
-}
+console.log(`Connecting to: ${sanitizeUrl(databaseUrl)}`);
 
 const sql = neon(databaseUrl);
 const schema = await readFile(
@@ -17,7 +13,13 @@ const schema = await readFile(
 );
 
 for (const statement of splitSql(schema)) {
-  await sql.query(statement);
+  try {
+    await sql.query(statement);
+  } catch (err) {
+    console.error(`Failed to execute statement: ${statement.slice(0, 100)}...`);
+    console.error(err.message);
+    process.exit(1);
+  }
 }
 
 console.log("Database schema is up to date.");

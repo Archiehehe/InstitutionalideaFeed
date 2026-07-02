@@ -400,10 +400,10 @@ export function ConvictionListsPage() {
             {diagnostics.seedAvailable})
           </Button>
           <Dialog open={pasteDialogOpen} onOpenChange={setPasteDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                <ClipboardPaste className="h-3 w-3" /> Paste List
-              </Button>
+            <DialogTrigger
+              render={<Button variant="outline" size="sm" className="gap-1" />}
+            >
+              <ClipboardPaste className="h-3 w-3" /> Paste List
             </DialogTrigger>
             <DialogContent className="max-w-xl">
               <DialogHeader>
@@ -443,10 +443,10 @@ export function ConvictionListsPage() {
             </DialogContent>
           </Dialog>
           <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                <Plus className="h-3 w-3" /> Add
-              </Button>
+            <DialogTrigger
+              render={<Button variant="outline" size="sm" className="gap-1" />}
+            >
+              <Plus className="h-3 w-3" /> Add
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>

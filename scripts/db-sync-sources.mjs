@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { neon } from "@neondatabase/serverless";
-import { getDatabaseUrl } from "../src/lib/storage/env.js";
+import { getDatabaseUrl } from "./db-env.mjs";
 
 const databaseUrl = getDatabaseUrl();
 

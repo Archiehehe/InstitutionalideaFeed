@@ -71,6 +71,7 @@ export function FeedPage() {
       if (sourceTierFilter) params.set("sourceTier", sourceTierFilter);
       params.set("window", windowFilter);
 
+      const res = await fetch(`/api/articles?${params}`);
       if (!res.ok) {
         const data = await res.json();
         if (data.error === "setup_required") {

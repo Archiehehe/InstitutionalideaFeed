@@ -4,7 +4,7 @@ import { getDatabaseUrl, getDirectDatabaseUrl } from "@/lib/storage/env";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const storageMode = getStorageMode();
   const hasDatabaseUrl = Boolean(getDatabaseUrl());
   const hasDirectDatabaseUrl = Boolean(getDirectDatabaseUrl());
@@ -22,12 +22,12 @@ export async function GET(request: NextRequest) {
         await store.getSources();
         dbConnected = true;
         schemaReady = true;
-      } catch (e: Error) {
+      } catch (e: any) {
         dbConnected = true;
         error = e.message;
         if (
-          e.message.toLowerCase().includes("relation") &&
-          e.message.toLowerCase().includes("does not exist")
+          e.message?.toLowerCase().includes("relation") &&
+          e.message?.toLowerCase().includes("does not exist")
         ) {
           schemaReady = false;
           errorCode = "schema_missing";
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
           errorCode = "connection_failed";
         }
       }
-    } catch (e: Error) {
+    } catch (e: any) {
       dbConnected = false;
       error = e.message;
       errorCode = "initialization_failed";

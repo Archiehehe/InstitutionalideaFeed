@@ -38,6 +38,8 @@ alter table sources add column if not exists blocked_path_patterns text[] defaul
 alter table sources add column if not exists preferred_discovery_method text;
 alter table sources add column if not exists known_article_index_urls text[] default '{}';
 alter table sources add column if not exists source_needs_url_pattern boolean default false;
+alter table sources add column if not exists parser_key text;
+alter table sources add column if not exists requires_dedicated_parser boolean default false;
 
 create unique index if not exists idx_sources_domain_unique on sources (lower(domain));
 
@@ -353,13 +355,15 @@ where review_status not in ('needs_review', 'verified', 'rejected') or review_st
 
 do $$
 begin
-  if not exists (
+  if exists (
     select 1 from pg_constraint where conname = 'conviction_lists_source_type_check'
   ) then
-    alter table conviction_lists
-      add constraint conviction_lists_source_type_check
-      check (source_type in ('official_page', 'official_pdf', 'media_summary', 'manual', 'csv', 'paste', 'api'));
+    alter table conviction_lists drop constraint conviction_lists_source_type_check;
   end if;
+
+  alter table conviction_lists
+    add constraint conviction_lists_source_type_check
+    check (source_type in ('official_page', 'official_pdf', 'media_summary', 'manual', 'csv', 'paste', 'api', 'seed'));
 
   if not exists (
     select 1 from pg_constraint where conname = 'conviction_lists_confidence_check'
