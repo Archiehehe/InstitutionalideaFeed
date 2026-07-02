@@ -173,7 +173,7 @@ export function FeedPage() {
       {articles.length === 0 ? (
         <EmptyState
           title="No qualified institutional research in this window"
-          description="Institutional research articles must have 3+ validated screenable public equity tickers from an eligible source to appear in the feed."
+          description="Institutional research articles must pass source, content, and research-quality checks to appear in the feed."
           actions={[
             ...(windowFilter !== '90d' && windowFilter !== 'all'
               ? [{ label: 'Show 90 days', onClick: () => handleWindowChange('90d') }]

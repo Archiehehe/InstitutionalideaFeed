@@ -42,7 +42,7 @@ const SOURCE_OWN_TICKERS: Record<string, string[]> = {
   'northerntrust.com': ['NTRS'],
 }
 
-const EQUITY_CONTEXT = /\b(stock|stocks|share|shares|equity|equities|company|companies|ticker|tickers|holding|holdings|position|positions|name|names|buy|sell|owned|overweight|underweight|beneficiary|beneficiaries|exposure|portfolio|basket|constituent|constituents|top pick|best idea|conviction)\b/i
+const EQUITY_CONTEXT = /\b(stock|stocks|share|shares|equity|equities|company|companies|ticker|tickers|holding|holdings|position|positions|name|names|buy|sell|owned|overweight|underweight|beneficiary|beneficiaries|exposure|portfolio|basket|constituent|constituents|top pick|best idea|conviction|outlook|research|sector|theme|market|strategy|opportunity|opportunities|idea|ideas|commentary)\b/i
 const EXCHANGE_CONTEXT = /\b(NYSE|Nasdaq|NASDAQ|AMEX|NYSEARCA|LSE|TSX|HKEX|TSE|ASX)\s*:/i
 const BAD_CONTEXT = /\b(inflation|program|programme|spread|spreads|credit|index|indicator|model|language|central bank|ecb|policy|bond|bonds|yield|yields|rate|rates|purchase|purchases|facility|facilities|macro|gdp|cpi|hicp|pepp|quantitative|app purchases|natural language|raft|oass?|investment grade|ig credit)\b/i
 const COMPANY_SUFFIX_CONTEXT = /\b(inc|corp|corporation|ltd|limited|plc|sa|nv|ag|group|holdings|technologies|semiconductor|systems|bank|energy|pharma|therapeutics|software|capital)\b/i

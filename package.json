@@ -19,7 +19,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test",
     "test:sell-side": "node --import tsx --test tests/sell-side.test.ts",
+    "test:feed": "node --import tsx --test tests/feed-qualification.test.ts",
     "smoke:sell-side": "node --import tsx scripts/smoke-sell-side.ts",
+    "smoke:feed": "node --import tsx scripts/smoke-feed.ts",
     "guardrails:sell-side": "node --import tsx scripts/check-sell-side-guardrails.ts"
   },
   "dependencies": {
