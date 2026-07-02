@@ -178,7 +178,9 @@ function SignalSummary({ row }: { row: OverlapRow }) {
   return (
     <div className="space-y-3">
       <div className="rounded-md border border-[#1F1F1F] bg-[#0A0A0A] p-3 text-xs">
-        <div className="text-muted-foreground">Mentioned by {mentionedByInstitutionsCount} institutions across {row.listCount} lists</div>
+        <div className="text-muted-foreground">
+          Mentioned by {mentionedByInstitutionsCount} institutions across {row.listCount} lists
+        </div>
         <div className="mt-1">Verified mentions: {verifiedMentions}</div>
         <div className="mt-0.5">Needs-review mentions: {needsReviewMentions}</div>
       </div>
@@ -302,32 +304,38 @@ function OverlapPageBody({
           <label className="text-xs font-medium">Search ticker/company</label>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input value={filters.search} onChange={(e) => updateFilter('search', e.target.value)} className="pl-8" placeholder="SNOW or Snowflake" />
+            <Input
+              value={filters.search}
+              onChange={(e) => updateFilter('search', e.target.value)}
+              className="pl-8"
+              placeholder="SNOW or Snowflake"
+            />
           </div>
         </div>
-
         <div className="space-y-2">
           <label className="text-xs font-medium">Institution</label>
           <Select value={filters.institution || 'all'} onValueChange={(value) => handleSelectChange('institution', value === 'all' ? '' : value)}>
             <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {institutions.map((institution) => <SelectItem key={institution} value={institution}>{institution}</SelectItem>)}
+              {institutions.map((institution) => (
+                <SelectItem key={institution} value={institution}>{institution}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <label className="text-xs font-medium">Year</label>
           <Select value={filters.year || 'all'} onValueChange={(value) => handleSelectChange('year', value === 'all' ? '' : value)}>
             <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {years.map((year) => <SelectItem key={year} value={String(year)}>{year}</SelectItem>)}
+              {years.map((year) => (
+                <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <label className="text-xs font-medium">Minimum mentions</label>
           <Select value={filters.minMentions || '1'} onValueChange={(value) => handleSelectChange('minMentions', value)}>
@@ -339,58 +347,63 @@ function OverlapPageBody({
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <label className="text-xs font-medium">Sector</label>
           <Select value={filters.sector || 'all'} onValueChange={(value) => handleSelectChange('sector', value === 'all' ? '' : value)}>
             <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {sectors.map((sector) => <SelectItem key={sector} value={sector}>{sector}</SelectItem>)}
+              {sectors.map((sector) => (
+                <SelectItem key={sector} value={sector}>{sector}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <label className="text-xs font-medium">Theme</label>
           <Select value={filters.theme || 'all'} onValueChange={(value) => handleSelectChange('theme', value === 'all' ? '' : value)}>
             <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {themes.map((theme) => <SelectItem key={theme} value={theme}>{theme}</SelectItem>)}
+              {themes.map((theme) => (
+                <SelectItem key={theme} value={theme}>{theme}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <label className="text-xs font-medium">Review status</label>
           <Select value={filters.reviewStatus || 'all'} onValueChange={(value) => handleSelectChange('reviewStatus', value === 'all' ? '' : value)}>
             <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {reviewStatuses.map((reviewStatus) => <SelectItem key={reviewStatus} value={reviewStatus}>{reviewStatus}</SelectItem>)}
+              {reviewStatuses.map((reviewStatus) => (
+                <SelectItem key={reviewStatus} value={reviewStatus}>{reviewStatus}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <label className="text-xs font-medium">Confidence</label>
           <Select value={filters.confidence || 'all'} onValueChange={(value) => handleSelectChange('confidence', value === 'all' ? '' : value)}>
             <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {confidences.map((confidence) => <SelectItem key={confidence} value={confidence}>{confidence}</SelectItem>)}
+              {confidences.map((confidence) => (
+                <SelectItem key={confidence} value={confidence}>{confidence}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <label className="text-xs font-medium">Source type</label>
           <Select value={filters.sourceType || 'all'} onValueChange={(value) => handleSelectChange('sourceType', value === 'all' ? '' : value)}>
             <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {sourceTypes.map((sourceType) => <SelectItem key={sourceType} value={sourceType}>{sourceType}</SelectItem>)}
+              {sourceTypes.map((sourceType) => (
+                <SelectItem key={sourceType} value={sourceType}>{sourceType}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -428,7 +441,9 @@ function OverlapPageBody({
                 <td className="px-3 py-3">{row.institutions.join(', ') || '—'}</td>
                 <td className="px-3 py-3">{[...row.themes, ...row.sectors].slice(0, 3).join(' / ') || '—'}</td>
                 <td className="px-3 py-3">
-                  {row.latestPeriod ? `${row.latestPeriod}${row.latestYear ? ` ${row.latestYear}` : ''}` : row.latestYear ?? '—'}
+                  {row.latestPeriod
+                    ? `${row.latestPeriod}${row.latestYear ? ` ${row.latestYear}` : ''}`
+                    : row.latestYear ?? '—'}
                 </td>
                 <td className="px-3 py-3">{row.confidences.join(', ') || '—'} / {row.reviewStatuses.join(', ') || '—'}</td>
                 <td className="px-3 py-3">{row.actions.join(', ') || '—'}</td>
@@ -510,8 +525,14 @@ function OverlapPageBody({
                             </Link>
                             <div className="mt-1 text-xs text-muted-foreground">Institution: {entry.institution}</div>
                             <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                              <FieldLine label="Year / Period" value={entry.year ? `${entry.year}${entry.period ? ` ${entry.period}` : ''}` : entry.period ?? '—'} />
-                              <FieldLine label="Theme / Sector" value={[entry.theme, entry.sector].filter(Boolean).join(' / ') || '—'} />
+                              <FieldLine
+                                label="Year / Period"
+                                value={entry.year ? `${entry.year}${entry.period ? ` ${entry.period}` : ''}` : entry.period ?? '—'}
+                              />
+                              <FieldLine
+                                label="Theme / Sector"
+                                value={[entry.theme, entry.sector].filter(Boolean).join(' / ') || '—'}
+                              />
                               <FieldLine label="Review status" value={entry.reviewStatus ?? '—'} />
                               <FieldLine label="Confidence" value={entry.confidence.replace('_', ' ')} />
                               <FieldLine label="Source type" value={entry.sourceType.replace('_', ' ')} />
