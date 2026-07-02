@@ -248,6 +248,10 @@ export function ConvictionListOverlapPageContent() {
   const [basketSubmitting, setBasketSubmitting] = useState(false)
   const [basketFeedback, setBasketFeedback] = useState<string | null>(null)
 
+  // Watchlist submit status shared by sticky bar + drawer
+  const [watchlistSubmitting, setWatchlistSubmitting] = useState(false)
+  const [watchlistFeedback, setWatchlistFeedback] = useState<string | null>(null)
+
   // Sticky bar copy success
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
 
@@ -413,45 +417,89 @@ export function ConvictionListOverlapPageContent() {
   const addSelectedToWatchlist = async () => {
     const tickers = Array.from(new Set(dedupedSelectedTickers)).filter(Boolean)
     if (tickers.length === 0) return
+    if (watchlistSubmitting) return
+
+    setWatchlistSubmitting(true)
+    setWatchlistFeedback(null)
 
     let added = 0
     let skipped = 0
     let failed = 0
     const failedTickers: string[] = []
 
-    for (const ticker of tickers) {
-      try {
-        const res = await fetch('/api/watchlist', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticker }),
-        })
+    try {
+      for (const ticker of tickers) {
+        try {
+          const res = await fetch('/api/watchlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticker }),
+          })
 
-        if (!res.ok) {
+          if (!res.ok) {
+            failed++
+            failedTickers.push(ticker)
+            continue
+          }
+
+          const json = await res.json().catch(() => ({} as any))
+          if (json?.duplicate) {
+            skipped++
+          } else {
+            added++
+          }
+        } catch {
           failed++
           failedTickers.push(ticker)
-          continue
         }
-
-        const json = await res.json().catch(() => ({} as any))
-        if (json?.duplicate) {
-          skipped++
-        } else {
-          added++
-        }
-      } catch {
-        failed++
-        failedTickers.push(ticker)
       }
+    } finally {
+      setWatchlistSubmitting(false)
     }
 
-    // inline feedback (no alert)
-    setBasketFeedback(
-      `Watchlist update: added ${added}, skipped ${skipped}, failed ${failed}$${failedTickers.length ? ` (${failedTickers.join(', ')})` : ''}`
-        .replace('$', '')
-        .trim(),
-    )
-    window.setTimeout(() => setBasketFeedback(null), 4000)
+    const failedSuffix = failedTickers.length ? ` (failed: ${failedTickers.join(', ')})` : ''
+    setWatchlistFeedback(`Watchlist update: added ${added}, skipped ${skipped}, failed ${failed}${failedSuffix}`)
+    window.setTimeout(() => setWatchlistFeedback(null), 5000)
+  }
+
+  const addSingleToWatchlist = async (ticker: string) => {
+    const t = normalizeClipboardText(ticker)
+    if (!t) return
+
+    if (watchlistSubmitting) return
+    setWatchlistSubmitting(true)
+    setWatchlistFeedback(null)
+
+    let added = 0
+    let skipped = 0
+    let failed = 0
+    const failedTickers: string[] = []
+
+    try {
+      const res = await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker: t }),
+      })
+
+      if (!res.ok) {
+        failed++
+        failedTickers.push(t)
+      } else {
+        const json = await res.json().catch(() => ({} as any))
+        if (json?.duplicate) skipped++
+        else added++
+      }
+    } catch {
+      failed++
+      failedTickers.push(t)
+    } finally {
+      setWatchlistSubmitting(false)
+    }
+
+    const failedSuffix = failedTickers.length ? ` (failed: ${failedTickers.join(', ')})` : ''
+    setWatchlistFeedback(`Watchlist update: added ${added}, skipped ${skipped}, failed ${failed}${failedSuffix}`)
+    window.setTimeout(() => setWatchlistFeedback(null), 5000)
   }
 
   const openBasketDialog = () => {
@@ -778,7 +826,13 @@ export function ConvictionListOverlapPageContent() {
               <Button variant="outline" size="sm" className="gap-1" onClick={() => copyTickers(dedupedSelectedTickers)}>
                 <Copy className="h-3.5 w-3.5" /> Copy tickers
               </Button>
-              <Button variant="outline" size="sm" className="gap-1" onClick={addSelectedToWatchlist}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => void addSelectedToWatchlist()}
+                disabled={watchlistSubmitting}
+              >
                 <Eye className="h-3.5 w-3.5" /> Add selected to Watchlist
               </Button>
               <Button variant="outline" size="sm" onClick={openBasketDialog}>
@@ -787,6 +841,7 @@ export function ConvictionListOverlapPageContent() {
             </div>
           </div>
           {copyFeedback && <div className="mt-2 text-xs text-blue-300">{copyFeedback}</div>}
+          {watchlistFeedback && <div className="mt-2 text-xs text-blue-300">{watchlistFeedback}</div>}
           {basketFeedback && <div className="mt-2 text-xs text-blue-300">{basketFeedback}</div>}
         </div>
       )}
@@ -926,33 +981,13 @@ export function ConvictionListOverlapPageContent() {
                       )}
                       {isSelected(selectedTickerRow.ticker) ? 'Unselect this ticker' : 'Select this ticker'}
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1" disabled={false} onClick={() => {
-                      setSelectedTickers((prev) => {
-                        if (prev.has(selectedTickerRow.ticker)) return prev
-                        const next = new Map(prev)
-                        next.set(selectedTickerRow.ticker, {
-                          ticker: selectedTickerRow.ticker,
-                          companyName: selectedTickerRow.companyName,
-                          mentionCount: selectedTickerRow.mentionCount,
-                          institutionCount: selectedTickerRow.institutionCount,
-                          themes: selectedTickerRow.themes,
-                          sectors: selectedTickerRow.sectors,
-                          lists: selectedTickerRow.lists,
-                        })
-                        return next
-                      })
-                      void (async () => {
-                        try {
-                          await fetch('/api/watchlist', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ ticker: selectedTickerRow.ticker }),
-                          })
-                        } catch {
-                          // no alert
-                        }
-                      })()
-                    }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                      disabled={watchlistSubmitting}
+                      onClick={() => void addSingleToWatchlist(selectedTickerRow.ticker)}
+                    >
                       <FolderPlus className="h-3.5 w-3.5" /> Add this ticker to Watchlist
                     </Button>
                     <Button variant="outline" size="sm" className="gap-1" onClick={() => copyTickers([selectedTickerRow.ticker])}>
