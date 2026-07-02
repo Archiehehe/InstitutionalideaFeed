@@ -18,17 +18,21 @@ export function validateListCandidate(candidate: SellSideListCandidate): Validat
     errors.push('List name is required.')
   }
 
-  if (!candidate.sourceUrl && !['manual', 'csv', 'paste', 'media_summary'].includes(candidate.sourceType)) {
-    errors.push('Source URL is required for non-manual source types.')
+  if (!['manual', 'csv', 'paste'].includes(candidate.sourceType) && !candidate.sourceUrl?.trim()) {
+    errors.push('Source URL is required unless source type is manual, paste, or csv.')
   }
 
-  const tickerSet = new Set(candidate.members.map((m) => m.ticker.toUpperCase()))
+  if (candidate.sourceType === 'media_summary' && candidate.reviewStatus !== 'needs_review') {
+    errors.push('Media summaries must remain needs_review.')
+  }
+
+  const tickerSet = new Set(candidate.members.map((member) => member.ticker.toUpperCase()))
   if (tickerSet.size !== candidate.members.length) {
     warnings.push('Duplicate tickers found and deduplicated.')
   }
 
   if (tickerSet.size < 3) {
-    errors.push('List must have at least 3 validated tickers.')
+    errors.push('3+ tickers required.')
   }
 
   if (candidate.theme === undefined && candidate.sector === undefined) {

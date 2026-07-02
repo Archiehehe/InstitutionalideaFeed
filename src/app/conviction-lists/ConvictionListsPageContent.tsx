@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, Suspense } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
@@ -149,7 +149,13 @@ export function ConvictionListsPage() {
     }
   }, [searchParams])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void load()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [load])
 
   const saveBasket = async (list: ConvictionListData) => {
     await fetch('/api/baskets', {
@@ -286,6 +292,11 @@ export function ConvictionListsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Conviction Lists</h1>
         <div className="flex gap-2">
+          <Link href="/sell-side-list-finder">
+            <Button variant="outline" size="sm" className="gap-1">
+              <Search className="h-3 w-3" /> Find Lists
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" className="gap-1" onClick={handleLoadQueries}>
             <Search className="h-3 w-3" /> Search Queries
           </Button>

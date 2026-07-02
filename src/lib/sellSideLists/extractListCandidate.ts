@@ -1,6 +1,14 @@
 import type { SellSideListCandidate, SellSideListMember } from './types'
 import { normalizeTicker, isScreenableEquityTicker } from '@/lib/utils/screenableTicker'
 
+const KNOWN_TICKERS: Record<string, { ticker: string; companyName: string }> = {
+  SNOW: { ticker: 'SNOW', companyName: 'Snowflake' },
+  DDOG: { ticker: 'DDOG', companyName: 'Datadog' },
+  FROG: { ticker: 'FROG', companyName: 'JFrog' },
+  MDB: { ticker: 'MDB', companyName: 'MongoDB' },
+  TWLO: { ticker: 'TWLO', companyName: 'Twilio' },
+}
+
 export function parsePastedList(text: string): Partial<SellSideListCandidate> {
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
   const header = lines[0] ?? ''
@@ -26,6 +34,36 @@ export function parsePastedList(text: string): Partial<SellSideListCandidate> {
     members,
     sourceType: 'paste',
     confidence: 'needs_review',
+  }
+}
+
+export function parseCandidateFromText(text: string, context: Partial<SellSideListCandidate> = {}): Partial<SellSideListCandidate> {
+  const candidate = parsePastedList(text)
+  const members = candidate.members && candidate.members.length > 0
+    ? candidate.members
+    : parseKnownTickerMentions(text)
+
+  const institution = context.institution?.trim() || candidate.institution || 'Unknown Institution'
+  const listName = context.listName?.trim() || candidate.listName || 'Untitled List'
+  const displayName = [institution, listName].filter(Boolean).join(' ').trim()
+
+  return {
+    institution,
+    listName,
+    displayName,
+    period: context.period ?? candidate.period ?? undefined,
+    year: context.year ?? candidate.year ?? undefined,
+    theme: context.theme ?? undefined,
+    sector: context.sector ?? undefined,
+    region: context.region ?? undefined,
+    sourcePublisher: context.sourcePublisher ?? undefined,
+    sourceUrl: context.sourceUrl ?? undefined,
+    sourceType: context.sourceType ?? 'media_summary',
+    confidence: context.confidence ?? 'needs_review',
+    reviewStatus: context.reviewStatus ?? 'needs_review',
+    rawSourceTitle: context.rawSourceTitle ?? undefined,
+    rawSourceExcerpt: context.rawSourceExcerpt ?? undefined,
+    members: members.map((member, index) => ({ ...member, rank: member.rank ?? index + 1 })),
   }
 }
 
@@ -85,4 +123,10 @@ function parseTickerLine(line: string): SellSideListMember | null {
   if (!ticker || !isScreenableEquityTicker(ticker)) return null
 
   return { ticker, companyName, action }
+}
+
+function parseKnownTickerMentions(text: string): SellSideListMember[] {
+  const normalized = text.toUpperCase()
+  const matches = Object.values(KNOWN_TICKERS).filter((entry) => normalized.includes(entry.ticker))
+  return matches.map((entry) => ({ ticker: entry.ticker, companyName: entry.companyName, action: 'buy' }))
 }

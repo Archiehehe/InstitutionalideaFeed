@@ -61,7 +61,11 @@ export function ConvictionListDetailPage({ id }: { id: string }) {
   }, [id])
 
   useEffect(() => {
-    fetchList()
+    const timeoutId = window.setTimeout(() => {
+      void fetchList()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [fetchList])
 
   if (error) return <ErrorState message={error} />
@@ -79,7 +83,7 @@ export function ConvictionListDetailPage({ id }: { id: string }) {
         if (!res.ok) throw new Error('Failed to update status')
         await fetchList()
         setActionStatus({ type: 'review', message: `Status updated to ${action}`, variant: 'success' })
-    } catch (err) {
+    } catch {
         setActionStatus({ type: 'review', message: 'Failed to update status', variant: 'destructive' })
     } finally {
         setIsActionRunning(false)
@@ -103,8 +107,8 @@ export function ConvictionListDetailPage({ id }: { id: string }) {
         } else {
             setActionStatus({ type: 'basket', message: 'Basket saved successfully', variant: 'success' })
         }
-    } catch (err) {
-        setActionStatus({ type: 'basket', message: err instanceof Error ? err.message : 'Failed to save basket', variant: 'destructive' })
+    } catch {
+        setActionStatus({ type: 'basket', message: 'Failed to save basket', variant: 'destructive' })
     } finally {
         setIsActionRunning(false)
     }
@@ -115,7 +119,7 @@ export function ConvictionListDetailPage({ id }: { id: string }) {
     setActionStatus(null)
     let added = 0
     let skipped = 0
-    let failed: string[] = []
+    const failed: string[] = []
     
     for(const ticker of data.tickers) {
         try {
@@ -128,7 +132,7 @@ export function ConvictionListDetailPage({ id }: { id: string }) {
             if (!res.ok) failed.push(ticker)
             else if (result.duplicate) skipped++
             else added++
-        } catch (err) {
+        } catch {
             failed.push(ticker)
         }
     }

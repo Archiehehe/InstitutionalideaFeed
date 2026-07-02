@@ -5,58 +5,94 @@ import { validateListCandidate } from './validateListCandidate'
 export interface SaveResult {
   success: boolean
   listId?: string
+  url?: string
+  created: number
+  updated: number
+  skipped: number
+  failed: number
   errors: string[]
   warnings: string[]
-  status: 'created' | 'updated' | 'skipped'
+  status: 'created' | 'updated' | 'skipped' | 'failed'
 }
 
 export async function saveListCandidate(candidate: SellSideListCandidate): Promise<SaveResult> {
-  const validation = validateListCandidate(candidate)
+  const normalizedCandidate = normalizeCandidate(candidate)
+  const validation = validateListCandidate(normalizedCandidate)
   if (!validation.valid) {
-    return { success: false, errors: validation.errors, warnings: validation.warnings, status: 'skipped' }
+    return {
+      success: false,
+      created: 0,
+      updated: 0,
+      skipped: 0,
+      failed: 1,
+      errors: validation.errors,
+      warnings: validation.warnings,
+      status: 'failed',
+    }
   }
 
   const store = getStore()
-  const slug = slugify([candidate.institution, candidate.listName, candidate.year].filter(Boolean).join(' '))
+  const slug = slugify([normalizedCandidate.institution, normalizedCandidate.listName, normalizedCandidate.year, normalizedCandidate.period].filter(Boolean).join(' '))
 
   const existing = await store.getConvictionList(slug)
-  if (existing) {
-    // TODO: Check if we need to update anything (members, etc.)
-    return { success: true, listId: existing.id, errors: [], warnings: validation.warnings, status: 'skipped' }
-  }
+  const list = existing
+    ? await store.updateConvictionList(existing.id, {
+      institution: normalizedCandidate.institution,
+      listName: normalizedCandidate.listName,
+      displayName: normalizedCandidate.displayName,
+      year: normalizedCandidate.year,
+      period: normalizedCandidate.period,
+      theme: normalizedCandidate.theme,
+      sector: normalizedCandidate.sector,
+      region: normalizedCandidate.region,
+      sourceUrl: normalizedCandidate.sourceUrl,
+      sourceType: normalizedCandidate.sourceType,
+      sourcePublisher: normalizedCandidate.sourcePublisher,
+      confidence: normalizedCandidate.confidence,
+      reviewStatus: normalizedCandidate.reviewStatus,
+      rawSourceTitle: normalizedCandidate.rawSourceTitle,
+      rawSourceExcerpt: normalizedCandidate.rawSourceExcerpt,
+      importedFrom: normalizedCandidate.importedFrom,
+      publishedAt: normalizedCandidate.publishedAt,
+      notes: [normalizedCandidate.rawSourceExcerpt, `Imported from: ${normalizedCandidate.importedFrom ?? 'manual'}`].filter(Boolean).join('\n') || undefined,
+    }) ?? existing
+    : await store.createConvictionList({
+      slug,
+      institution: normalizedCandidate.institution,
+      listName: normalizedCandidate.listName,
+      displayName: normalizedCandidate.displayName,
+      year: normalizedCandidate.year,
+      period: normalizedCandidate.period,
+      theme: normalizedCandidate.theme,
+      sector: normalizedCandidate.sector,
+      region: normalizedCandidate.region,
+      sourceUrl: normalizedCandidate.sourceUrl,
+      sourceType: normalizedCandidate.sourceType,
+      sourcePublisher: normalizedCandidate.sourcePublisher,
+      accessStatus: 'public',
+      confidence: normalizedCandidate.confidence,
+      reviewStatus: normalizedCandidate.reviewStatus,
+      rawSourceTitle: normalizedCandidate.rawSourceTitle,
+      rawSourceExcerpt: normalizedCandidate.rawSourceExcerpt,
+      importedFrom: normalizedCandidate.importedFrom,
+      publishedAt: normalizedCandidate.publishedAt,
+      notes: [normalizedCandidate.rawSourceExcerpt, `Imported from: ${normalizedCandidate.importedFrom ?? 'manual'}`].filter(Boolean).join('\n') || undefined,
+    })
 
-  const validSourceTypes = ['official_page', 'official_pdf', 'media_summary', 'manual', 'csv', 'paste', 'api'] as const
-  const sourceType = validSourceTypes.includes(candidate.sourceType as typeof validSourceTypes[number])
-    ? candidate.sourceType
-    : 'manual'
+  const existingMembers = await store.getConvictionListMembers(list.id)
+  const existingMemberTickers = new Set(existingMembers.map((member) => member.ticker.toUpperCase()))
+  let skippedMembers = 0
 
-  const list = await store.createConvictionList({
-    slug,
-    institution: candidate.institution,
-    listName: candidate.listName,
-    displayName: candidate.displayName,
-    year: candidate.year,
-    period: candidate.period,
-    theme: candidate.theme,
-    sector: candidate.sector,
-    region: candidate.region,
-    sourceUrl: candidate.sourceUrl,
-    sourceType,
-    sourcePublisher: candidate.sourcePublisher,
-    accessStatus: 'public',
-    confidence: candidate.confidence,
-    reviewStatus: (['needs_review', 'verified', 'rejected'].includes(candidate.reviewStatus as 'needs_review' | 'verified' | 'rejected') ? candidate.reviewStatus : 'needs_review') as 'needs_review' | 'verified' | 'rejected',
-    rawSourceTitle: candidate.rawSourceTitle,
-    rawSourceExcerpt: candidate.rawSourceExcerpt,
-    importedFrom: candidate.importedFrom,
-    publishedAt: candidate.publishedAt,
-    notes: [candidate.rawSourceExcerpt, `Imported from: ${candidate.importedFrom ?? 'manual'}`].filter(Boolean).join('\n') || undefined,
-  })
+  for (const [index, member] of normalizedCandidate.members.entries()) {
+    const ticker = member.ticker.toUpperCase()
+    if (existingMemberTickers.has(ticker)) {
+      skippedMembers += 1
+      continue
+    }
 
-  for (const [index, member] of candidate.members.entries()) {
     await store.addConvictionListMember({
       convictionListId: list.id,
-      ticker: member.ticker.toUpperCase(),
+      ticker,
       companyName: member.companyName,
       rank: member.rank ?? index + 1,
       weight: member.weight,
@@ -66,7 +102,38 @@ export async function saveListCandidate(candidate: SellSideListCandidate): Promi
     })
   }
 
-  return { success: true, listId: list.id, errors: [], warnings: validation.warnings, status: 'created' }
+  return {
+    success: true,
+    listId: list.id,
+    url: `/conviction-lists/${list.id}`,
+    created: existing ? 0 : 1,
+    updated: existing ? 1 : 0,
+    skipped: skippedMembers + (existing ? 0 : 0),
+    failed: 0,
+    errors: [],
+    warnings: validation.warnings,
+    status: existing ? 'updated' : 'created',
+  }
+}
+
+function normalizeCandidate(candidate: SellSideListCandidate): SellSideListCandidate {
+  const validSourceTypes = ['official_page', 'official_pdf', 'media_summary', 'manual', 'csv', 'paste', 'api'] as const
+  const sourceType = validSourceTypes.includes(candidate.sourceType as typeof validSourceTypes[number])
+    ? candidate.sourceType
+    : 'manual'
+
+  const reviewStatus = sourceType === 'media_summary'
+    ? 'needs_review'
+    : (['needs_review', 'verified', 'rejected'].includes(candidate.reviewStatus as 'needs_review' | 'verified' | 'rejected') ? candidate.reviewStatus : 'needs_review') as 'needs_review' | 'verified' | 'rejected'
+
+  return {
+    ...candidate,
+    displayName: candidate.displayName || `${candidate.institution} ${candidate.listName}`.trim(),
+    sourceType,
+    confidence: candidate.confidence === 'verified' ? 'verified' : 'needs_review',
+    reviewStatus,
+    members: candidate.members.filter((member) => member.ticker?.trim()),
+  }
 }
 
 function slugify(value: string): string {
